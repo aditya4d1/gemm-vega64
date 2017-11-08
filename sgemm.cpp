@@ -2,6 +2,8 @@
 #include<hip/hip_runtime.h>
 #include<hip/hip_runtime_api.h>
 #include "outer_product.h"
+#include "global_ops.h"
+#include "shared_ops.h"
 
 constexpr uint32_t dim_x = 4096;
 constexpr uint32_t dim_y = 4096;
@@ -12,6 +14,7 @@ constexpr uint32_t tile = 128;
 constexpr uint32_t tilex4 = tile / 4;
 constexpr uint32_t half_tile = 64;
 constexpr uint32_t half_tilex4 = 64 / 4;
+constexpr size_t size = dim_x * dim_y * sizeof(float);
 
 __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C) {
   int tx = hipThreadIdx_x;
@@ -19,73 +22,102 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C) {
   int bx = hipBlockIdx_x;
   int by = hipBlockIdx_y;
 
-Float4 a0 = A[tx + bx * tilex4];
-Float4 a1 = A[tx + bx * tilex4 + half_tilex4];
-Float4 b0 = B[ty + by * tilex4];
-Float4 b1 = B[ty + by * tilex4 + half_tilex4];
+  int c0_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*0;
+  int c1_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*1;
+  int c2_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*2;
+  int c3_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*3;
 
-Float4 c0, c1, c2, c3, c4, c5, c6, c7;
-Float4 c8, c9, c10, c11, c12, c13, c14, c15;
+  int c4_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*0 + half_tilex4;
+  int c5_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*1 + half_tilex4;
+  int c6_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*2 + half_tilex4;
+  int c7_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*3 + half_tilex4;
+
+  int c8_id  = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + dim_x4*0;
+  int c9_id  = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + dim_x4*1;
+  int c10_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + dim_x4*2;
+  int c11_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + dim_x4*3;
+
+  int c12_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + half_tilex4 + dim_x4*0;
+  int c13_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + half_tilex4 + dim_x4*1;
+  int c14_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + half_tilex4 + dim_x4*2;
+  int c15_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + half_tilex4 + dim_x4*3;
+
+  Float4 a0, a1, b0, b1;
+  Float4 c[16];
+
+  global_load(A, a0, tx + bx * tilex4);
+  global_load(B, b0, ty + by * tilex4);
+  global_load_16(A, a1, tx + bx * tilex4);
+  global_load_16(B, b1, ty + by * tilex4);
 
 
-__shared__ Float4  redA[unroll_factor * tilex4];
-__shared__ Float4  redB[unroll_factor * tilex4];
-__shared__ Float4 blueA[unroll_factor * tilex4];
-__shared__ Float4 blueB[unroll_factor * tilex4];
+  global_load(C, c[0], c0_id);
+  global_load(C, c[1], c1_id);
+  global_load(C, c[2], c2_id);
+  global_load(C, c[3], c3_id);
 
-redA[tx] = a0;
-redA[tx + half_tilex4] = a1;
-redB[ty] = b0;
-redB[ty + half_tilex4] = b1;
+  global_load(C, c[4], c4_id);
+  global_load(C, c[5], c5_id);
+  global_load(C, c[6], c6_id);
+  global_load(C, c[7], c7_id);
 
-/**
-int c0_id = tx + (dim_x/4)*0 + 00 + ty + bx * 32 + by * (dim_x/4) * 32;
-int c1_id = tx + (dim_x/4)*1 + 00 + ty + bx * 32 + by * (dim_x/4) * 32;
-int c2_id = tx + (dim_x/4)*2 + 00 + ty + bx * 32 + by * (dim_x/4) * 32;
-int c3_id = tx + (dim_x/4)*4 + 00 + ty + bx * 32 + by * (dim_x/4) * 32;
+  global_load(C, c[8], c8_id);
+  global_load(C, c[9], c9_id);
+  global_load(C, c[10], c10_id);
+  global_load(C, c[11], c11_id);
 
-int c4_id = tx + (dim_x/4)*0 + 16 + ty + bx * 32 + by * (dim_x/4) * 32;
-int c5_id = tx + (dim_x/4)*1 + 16 + ty + bx * 32 + by * (dim_x/4) * 32;
-int c6_id = tx + (dim_x/4)*2 + 16 + ty + bx * 32 + by * (dim_x/4) * 32;
-int c7_id = tx + (dim_x/4)*4 + 16 + ty + bx * 32 + by * (dim_x/4) * 32;
+  global_load(C, c[12], c12_id);
+  global_load(C, c[13], c13_id);
+  global_load(C, c[14], c14_id);
+  global_load(C, c[15], c15_id);
 
-int c8_id = tx + (dim_x/4)*0 + 00 + ty + 16 * (dim_x/4) + bx * 32 + by * (dim_x/4) * 32;
-int c9_id = tx + (dim_x/4)*1 + 00 + ty + 16 * (dim_x/4) + bx * 32 + by * (dim_x/4) * 32;
-int c10_id = tx + (dim_x/4)*2 + 00 + ty + 16 * (dim_x/4) + bx * 32 + by * (dim_x/4) * 32;
-int c11_id = tx + (dim_x/4)*4 + 00 + ty + 16 * (dim_x/4) + bx * 32 + by * (dim_x/4) * 32;
+  lgkmcnt<0>();
 
-int c8_id = tx + (dim_x/4)*0 + 16 + ty + 16 * (dim_x/4) + bx * 32 + by * (dim_x/4) * 32;
-int c9_id = tx + (dim_x/4)*1 + 16 + ty + 16 * (dim_x/4) + bx * 32 + by * (dim_x/4) * 32;
-int c10_id = tx + (dim_x/4)*2 + 16 + ty + 16 * (dim_x/4) + bx * 32 + by * (dim_x/4) * 32;
-int c11_id = tx + (dim_x/4)*4 + 16 + ty + 16 * (dim_x/4) + bx * 32 + by * (dim_x/4) * 32
-*/
+  outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+  outerProduct4x4(a1, b0, c[4], c[5], c[6], c[7]);
+  outerProduct4x4(a0, b1, c[8], c[9], c[10], c[11]);
+  outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
 
-/**
-* Below, we try to load to registers using inline asm
-*/
 
-asm volatile(
-  "\n \
-    global_load_dwordx4 %0, %4, off \n \
-    global_load_dwordx4 %1, %5, off \n \
-    global_load_dwordx4 %2, %6, off \n \
-    global_load_dwordx4 %3, %7, off \n \
-  "
-  :"=v"(a0),"=v"(a1),"=v"(b0),"=v"(b1)
-  :"v"(A + tx + bx * tilex4),"v"(A + tx + bx * tilex4 + half_tilex4),
-    "v"(B + tx + bx * tilex4),"v"(B + tx + bx * tilex4 + half_tilex4)
-);
+  global_store(C, c[0], c0_id);
+  global_store(C, c[1], c1_id);
+  global_store(C, c[2], c2_id);
+  global_store(C, c[3], c3_id);
 
-outerProduct4x4(a0, b0, c0, c1, c2, c3);
-outerProduct4x4(a1, b0, c4, c5, c6, c7);
-outerProduct4x4(a0, b1, c8, c9, c10, c11);
-outerProduct4x4(a1, b1, c12, c13, c14, c15);
+  global_store(C, c[4], c4_id);
+  global_store(C, c[5], c5_id);
+  global_store(C, c[6], c6_id);
+  global_store(C, c[7], c7_id);
+
+  global_store(C, c[8], c8_id);
+  global_store(C, c[9], c9_id);
+  global_store(C, c[10], c10_id);
+  global_store(C, c[11], c11_id);
+
+  global_store(C, c[12], c12_id);
+  global_store(C, c[13], c13_id);
+  global_store(C, c[14], c14_id);
+  global_store(C, c[15], c15_id);
 
 
 }
 
 
 int main() {
-Float4 *a, *b, *c;
-hipLaunchKernelGGL(SGEMM, dim3(1,1,1), dim3(1,1,1), 0, 0, a, b, c);
+  hipSetDevice(1);
+  std::vector<Float4> a(dim_x4*dim_x4), b(dim_x4*dim_x4), c(dim_x4*dim_x4);
+  std::fill(a.begin(), a.end(), 2.0f);
+  std::fill(b.begin(), b.end(), 3.0f);
+  std::fill(c.begin(), c.end(), 1.0f);
+  Float4 *Ad, *Bd, *Cd;
+  hipMalloc(&Ad, size);
+  hipMalloc(&Bd, size);
+  hipMalloc(&Cd, size);
+  hipMemcpy(Ad, a.data(), size, hipMemcpyHostToDevice);
+  hipMemcpy(Bd, b.data(), size, hipMemcpyHostToDevice);
+  hipMemcpy(Cd, c.data(), size, hipMemcpyHostToDevice);
+  hipLaunchKernelGGL(SGEMM, dim3(dim_x/(8*16),dim_y/(8*16),1), dim3(16,16,1), 0, 0, Ad, Bd, Cd);
+  hipDeviceSynchronize();
+  hipMemcpy(c.data(), Cd, size, hipMemcpyDeviceToHost);
+  std::cout<<c[10].x<<std::endl;
 }
