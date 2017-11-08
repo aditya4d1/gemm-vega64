@@ -56,8 +56,8 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C) {
   Float4 a, b;
   Float4 c[16];
 
-  global_load(A, a, a_id);
-  global_load(B, b, a_id);
+  global_load(A, a, a_global_id);
+  global_load(B, b, a_global_id);
 
   uint32_t redA, redB, blueA, blueB;
   shared_init(redA, redB, blueA, blueB);
@@ -75,8 +75,8 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C) {
 
   shared_read_b128(a0, redA_read_id0);
   shared_read_b128(a1, redA_read_id1);
-  shared_read_b128(b0, redA_read_id0);
-  shared_read_b128(b1, redA_read_id1);
+  shared_read_b128(b0, redB_read_id0);
+  shared_read_b128(b1, redB_read_id1);
 
   global_load(C, c[0], c0_id);
   global_load(C, c[1], c1_id);
@@ -99,9 +99,6 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C) {
   global_load(C, c[15], c15_id);
 
   lgkmcnt<0>();
-
-  shared_read_b128(redA, a0);
-  shared_read_b128(redB, );
 
   outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
   outerProduct4x4(a1, b0, c[4], c[5], c[6], c[7]);

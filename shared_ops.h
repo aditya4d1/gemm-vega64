@@ -12,8 +12,8 @@ inline __device__ void shared_init(uint32_t &redA, uint32_t &redB, uint32_t &blu
     v_mov_b32 %2, 8192  \n \
     v_mov_b32 %3, 12288 \n \
     "
+    :"=v"(redA),"=v"(redB),"=v"(blueA),"=v"(blueB)
     :
-    :"v"(redA),"v"(redB),"v"(blueA),"v"(blueB)
   );
 }
 
@@ -41,7 +41,7 @@ inline __device__ void shared_read_b128(Float4 &val, uint32_t &lds) {
     "\n \
     ds_read_b128 %0, %1 \n \
     "
-    :
-    :"v"(val),"v"(lds)
+    :"=v"(val)
+    :"v"(lds)
   );
 }
