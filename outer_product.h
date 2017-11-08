@@ -1,6 +1,6 @@
 #pragma once
 
-typedef float Float4 __attribute__((ext_vector_type(4)));
+#include "datatypes.h"
 
 inline __device__ void outerProduct4x4(Float4 &a, Float4 &b, Float4 &c0, Float4 &c1, Float4 &c2, Float4 &c3) {
   asm volatile(

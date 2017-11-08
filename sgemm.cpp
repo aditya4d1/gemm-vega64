@@ -16,7 +16,7 @@ constexpr uint32_t half_tile = 64;
 constexpr uint32_t half_tilex4 = 64 / 4;
 constexpr size_t size = dim_x * dim_y * sizeof(float);
 
-__global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C) {
+__global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, Float4 *buffA, Float4 *buffB) {
   int tx = hipThreadIdx_x;
   int ty = hipThreadIdx_y;
   int bx = hipBlockIdx_x;
@@ -57,21 +57,28 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C) {
   Float4 c[16];
 
   global_load(A, a, a_global_id);
-  global_load(B, b, a_global_id);
+  global_load(B, b, b_global_id);
 
   uint32_t redA, redB, blueA, blueB;
   shared_init(redA, redB, blueA, blueB);
 
-  uint32_t redA_write_id = redA + a_shared_id;
-  uint32_t redB_write_id = redB + b_shared_id;
+  uint32_t redA_write_id = redA + a_shared_id*16;
+  uint32_t redB_write_id = redB + b_shared_id*16;
 
-  uint32_t redA_read_id0 = redA + tx;
-  uint32_t redA_read_id1 = redA + tx + 16;
-  uint32_t redB_read_id0 = redB + tx;
-  uint32_t redB_read_id1 = redB + tx + 16;
+  uint32_t redA_read_id0 = redA + tx*16;
+  uint32_t redA_read_id1 = redA + (tx + 16)*16;
+  uint32_t redB_read_id0 = redB + ty*16;
+  uint32_t redB_read_id1 = redB + (ty + 16)*16;
+
+  lgkmcnt<0>();
+
+  buffA[a_global_id] = a;
+  buffB[b_global_id] = b;
 
   shared_write_b128(a, redA_write_id);
   shared_write_b128(b, redB_write_id);
+
+  lgkmcnt<0>();
 
   shared_read_b128(a0, redA_read_id0);
   shared_read_b128(a1, redA_read_id1);
@@ -105,7 +112,6 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C) {
   outerProduct4x4(a0, b1, c[8], c[9], c[10], c[11]);
   outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
 
-
   global_store(C, c[0], c0_id);
   global_store(C, c[1], c1_id);
   global_store(C, c[2], c2_id);
@@ -135,14 +141,18 @@ int main() {
   std::fill(b.begin(), b.end(), 3.0f);
   std::fill(c.begin(), c.end(), 1.0f);
   Float4 *Ad, *Bd, *Cd;
+  Float4 *buffA, *buffB;
+  hipHostMalloc(&buffA, size);
+  hipHostMalloc(&buffB, size);
   hipMalloc(&Ad, size);
   hipMalloc(&Bd, size);
   hipMalloc(&Cd, size);
   hipMemcpy(Ad, a.data(), size, hipMemcpyHostToDevice);
   hipMemcpy(Bd, b.data(), size, hipMemcpyHostToDevice);
   hipMemcpy(Cd, c.data(), size, hipMemcpyHostToDevice);
-  hipLaunchKernelGGL(SGEMM, dim3(dim_x/(8*16),dim_y/(8*16),1), dim3(16,16,1), 0, 0, Ad, Bd, Cd);
+  hipLaunchKernelGGL(SGEMM, dim3(dim_x/(8*16),dim_y/(8*16),1), dim3(16,16,1), 4*8*128*sizeof(float), 0, Ad, Bd, Cd, buffA, buffB);
   hipDeviceSynchronize();
   hipMemcpy(c.data(), Cd, size, hipMemcpyDeviceToHost);
   std::cout<<c[10].x<<std::endl;
+  std::cout<<buffA[10].x<<std::endl;
 }

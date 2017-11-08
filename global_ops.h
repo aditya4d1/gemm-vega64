@@ -1,5 +1,8 @@
 #pragma once
 
+#include <hip/hip_runtime.h>
+#include "datatypes.h"
+
 inline __device__ void global_load(Float4* &ptr, Float4 &val, uint32_t offset) {
 asm volatile("\n \
   global_load_dwordx4 %0, %1, off \n \
