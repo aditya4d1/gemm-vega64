@@ -22,6 +22,10 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C) {
   int bx = hipBlockIdx_x;
   int by = hipBlockIdx_y;
 
+/**
+* Load C
+*/
+
   int c0_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*0;
   int c1_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*1;
   int c2_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*2;
@@ -42,23 +46,37 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C) {
   int c14_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + half_tilex4 + dim_x4*2;
   int c15_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + half_tilex4 + dim_x4*3;
 
-  int a0_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4 \
-              + bx * tilex4 + by * tilex4 * dim_x4;
-  int a1_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4 \
-              + bx * tilex4 + by * tilex4 * dim_x4;
-  int b0_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4 \
-              + bx * tilex4 + by * tilex4 * dim_x4;
-  int b1_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4 \
-              + bx * tilex4 + by * tilex4 * dim_x4;
+  int a_shared_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4;
+  int b_shared_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4;
+
+  int a_global_id = a_shared_id + bx * tilex4 + by * tilex4 * dim_x4;
+  int b_global_id = b_shared_id + bx * tilex4 + by * tilex4 * dim_x4;
 
   Float4 a0, a1, b0, b1;
+  Float4 a, b;
   Float4 c[16];
 
-  global_load(A, a0, a0_id);
-  global_load(B, b0, a1_id);
-  global_load(A, a1, b0_id);
-  global_load(B, b1, b1_id);
+  global_load(A, a, a_id);
+  global_load(B, b, a_id);
 
+  uint32_t redA, redB, blueA, blueB;
+  shared_init(redA, redB, blueA, blueB);
+
+  uint32_t redA_write_id = redA + a_shared_id;
+  uint32_t redB_write_id = redB + b_shared_id;
+
+  uint32_t redA_read_id0 = redA + tx;
+  uint32_t redA_read_id1 = redA + tx + 16;
+  uint32_t redB_read_id0 = redB + tx;
+  uint32_t redB_read_id1 = redB + tx + 16;
+
+  shared_write_b128(a, redA_write_id);
+  shared_write_b128(b, redB_write_id);
+
+  shared_read_b128(a0, redA_read_id0);
+  shared_read_b128(a1, redA_read_id1);
+  shared_read_b128(b0, redA_read_id0);
+  shared_read_b128(b1, redA_read_id1);
 
   global_load(C, c[0], c0_id);
   global_load(C, c[1], c1_id);
@@ -81,6 +99,9 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C) {
   global_load(C, c[15], c15_id);
 
   lgkmcnt<0>();
+
+  shared_read_b128(redA, a0);
+  shared_read_b128(redB, );
 
   outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
   outerProduct4x4(a1, b0, c[4], c[5], c[6], c[7]);
@@ -107,8 +128,6 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C) {
   global_store(C, c[13], c13_id);
   global_store(C, c[14], c14_id);
   global_store(C, c[15], c15_id);
-
-
 }
 
 
