@@ -42,13 +42,22 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C) {
   int c14_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + half_tilex4 + dim_x4*2;
   int c15_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + half_tilex4 + dim_x4*3;
 
+  int a0_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4 \
+              + bx * tilex4 + by * tilex4 * dim_x4;
+  int a1_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4 \
+              + bx * tilex4 + by * tilex4 * dim_x4;
+  int b0_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4 \
+              + bx * tilex4 + by * tilex4 * dim_x4;
+  int b1_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4 \
+              + bx * tilex4 + by * tilex4 * dim_x4;
+
   Float4 a0, a1, b0, b1;
   Float4 c[16];
 
-  global_load(A, a0, tx + bx * tilex4);
-  global_load(B, b0, ty + by * tilex4);
-  global_load_16(A, a1, tx + bx * tilex4);
-  global_load_16(B, b1, ty + by * tilex4);
+  global_load(A, a0, a0_id);
+  global_load(B, b0, a1_id);
+  global_load(A, a1, b0_id);
+  global_load(B, b1, b1_id);
 
 
   global_load(C, c[0], c0_id);
