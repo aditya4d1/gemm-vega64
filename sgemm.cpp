@@ -105,7 +105,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C) {
 
 int main() {
   hipSetDevice(1);
-  std::vector<Float4> a(dim_x4*dim_x4), b(dim_x4*dim_x4), c(dim_x4*dim_x4);
+  std::vector<Float4> a(dim_x4*dim_y), b(dim_x4*dim_y), c(dim_x4*dim_y);
   std::fill(a.begin(), a.end(), 2.0f);
   std::fill(b.begin(), b.end(), 3.0f);
   std::fill(c.begin(), c.end(), 1.0f);
