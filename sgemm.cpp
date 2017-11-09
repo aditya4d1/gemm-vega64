@@ -59,22 +59,23 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, Float4 *buffA, Float4 *bu
   global_load(A, a, a_global_id);
   global_load(B, b, b_global_id);
   lgkmcnt<0>();
-
+/*
   uint32_t redA, redB, blueA, blueB;
   shared_init(redA, redB, blueA, blueB);
 
   uint32_t redA_write_id = redA + a_shared_id;
   uint32_t redB_write_id = redB + b_shared_id;
+*/
 
-  uint32_t redA_read_id0 = redA + tx;
-  uint32_t redA_read_id1 = redA + (tx + 16);
-  uint32_t redB_read_id0 = redB + ty;
-  uint32_t redB_read_id1 = redB + (ty + 16);
+  uint32_t redA_read_id0 = tx;
+  uint32_t redA_read_id1 = tx + 16;
+  uint32_t redB_read_id0 = ty;
+  uint32_t redB_read_id1 = ty + 16;
 
   lgkmcnt<0>();
-
-//  buffA[a_global_id] = a;
-//  buffB[b_global_id] = b;
+/*
+  buffA[a_global_id] = a;
+  buffB[b_global_id] = b;
 
   shared_write_b128(a, redA_write_id);
   shared_write_b128(b, redB_write_id);
@@ -85,6 +86,18 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, Float4 *buffA, Float4 *bu
   shared_read_b128(a1, redA_read_id1);
   shared_read_b128(b0, redB_read_id0);
   shared_read_b128(b1, redB_read_id1);
+*/
+
+  __shared__ Float4 sA[256];
+  __shared__ Float4 sB[256];
+  sA[a_shared_id] = A[a_global_id];
+  sB[b_shared_id] = B[b_global_id];
+
+  a0 = sA[redA_read_id0];
+  a1 = sA[redA_read_id1];
+
+  b0 = sB[redB_read_id0];
+  b1 = sB[redB_read_id1];
 
   global_load(C, c[0], c0_id);
   global_load(C, c[1], c1_id);
