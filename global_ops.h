@@ -39,7 +39,7 @@ template<uint32_t cnt>
 inline __device__ void lgkmcnt(){
   if(cnt == 0) {
     asm volatile("\n \
-    s_waitcnt lgkmcnt(0) \n \
+    s_waitcnt vmcnt(0) lgkmcnt(0) \n \
     "::);
   }
   if(cnt == 1) {

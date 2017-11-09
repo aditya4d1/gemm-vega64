@@ -26,31 +26,31 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, Float4 *buffA, Float4 *bu
 * Load C
 */
 
-  int c0_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*0;
-  int c1_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*1;
-  int c2_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*2;
-  int c3_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*3;
+  int c0_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + dim_x4*0;
+  int c1_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + dim_x4*1;
+  int c2_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + dim_x4*2;
+  int c3_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + dim_x4*3;
 
-  int c4_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*0 + half_tilex4;
-  int c5_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*1 + half_tilex4;
-  int c6_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*2 + half_tilex4;
-  int c7_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*3 + half_tilex4;
+  int c4_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + dim_x4*0 + half_tilex4;
+  int c5_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + dim_x4*1 + half_tilex4;
+  int c6_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + dim_x4*2 + half_tilex4;
+  int c7_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + dim_x4*3 + half_tilex4;
 
-  int c8_id  = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + dim_x4*0;
-  int c9_id  = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + dim_x4*1;
-  int c10_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + dim_x4*2;
-  int c11_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + dim_x4*3;
+  int c8_id  = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + half_tile * dim_x4 + dim_x4*0;
+  int c9_id  = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + half_tile * dim_x4 + dim_x4*1;
+  int c10_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + half_tile * dim_x4 + dim_x4*2;
+  int c11_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + half_tile * dim_x4 + dim_x4*3;
 
-  int c12_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + half_tilex4 + dim_x4*0;
-  int c13_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + half_tilex4 + dim_x4*1;
-  int c14_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + half_tilex4 + dim_x4*2;
-  int c15_id = tx + ty * dim_x4 + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + half_tilex4 + dim_x4*3;
+  int c12_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + half_tile * dim_x4 + half_tilex4 + dim_x4*0;
+  int c13_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + half_tile * dim_x4 + half_tilex4 + dim_x4*1;
+  int c14_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + half_tile * dim_x4 + half_tilex4 + dim_x4*2;
+  int c15_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + half_tile * dim_x4 + half_tilex4 + dim_x4*3;
 
-  int a_shared_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4;
-  int b_shared_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4;
+  int a_shared_id = (tx + (ty % 2) * 16 + (ty / 2) * dim_x4);
+  int b_shared_id = (tx + (ty % 2) * 16 + (ty / 2) * dim_x4);
 
-  int a_global_id = a_shared_id + bx * tilex4 + by * tilex4 * dim_x4;
-  int b_global_id = b_shared_id + bx * tilex4 + by * tilex4 * dim_x4;
+  int a_global_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4 + bx * 32 + by * 8192;
+  int b_global_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4 + bx * 32 + by * 8192;
 
   Float4 a0, a1, b0, b1;
   Float4 a, b;
@@ -58,22 +58,23 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, Float4 *buffA, Float4 *bu
 
   global_load(A, a, a_global_id);
   global_load(B, b, b_global_id);
+  lgkmcnt<0>();
 
   uint32_t redA, redB, blueA, blueB;
   shared_init(redA, redB, blueA, blueB);
 
-  uint32_t redA_write_id = redA + a_shared_id*16;
-  uint32_t redB_write_id = redB + b_shared_id*16;
+  uint32_t redA_write_id = redA + a_shared_id;
+  uint32_t redB_write_id = redB + b_shared_id;
 
-  uint32_t redA_read_id0 = redA + tx*16;
-  uint32_t redA_read_id1 = redA + (tx + 16)*16;
-  uint32_t redB_read_id0 = redB + ty*16;
-  uint32_t redB_read_id1 = redB + (ty + 16)*16;
+  uint32_t redA_read_id0 = redA + tx;
+  uint32_t redA_read_id1 = redA + (tx + 16);
+  uint32_t redB_read_id0 = redB + ty;
+  uint32_t redB_read_id1 = redB + (ty + 16);
 
   lgkmcnt<0>();
 
-  buffA[a_global_id] = a;
-  buffB[b_global_id] = b;
+//  buffA[a_global_id] = a;
+//  buffB[b_global_id] = b;
 
   shared_write_b128(a, redA_write_id);
   shared_write_b128(b, redB_write_id);
@@ -131,6 +132,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, Float4 *buffA, Float4 *bu
   global_store(C, c[13], c13_id);
   global_store(C, c[14], c14_id);
   global_store(C, c[15], c15_id);
+
 }
 
 
@@ -150,9 +152,13 @@ int main() {
   hipMemcpy(Ad, a.data(), size, hipMemcpyHostToDevice);
   hipMemcpy(Bd, b.data(), size, hipMemcpyHostToDevice);
   hipMemcpy(Cd, c.data(), size, hipMemcpyHostToDevice);
-  hipLaunchKernelGGL(SGEMM, dim3(dim_x/(8*16),dim_y/(8*16),1), dim3(16,16,1), 4*8*128*sizeof(float), 0, Ad, Bd, Cd, buffA, buffB);
+  hipLaunchKernelGGL(SGEMM, dim3(dim_x/(2*16),dim_y/(2*16),1), dim3(16,16,1), 0, 0, Ad, Bd, Cd, buffA, buffB);
   hipDeviceSynchronize();
   hipMemcpy(c.data(), Cd, size, hipMemcpyDeviceToHost);
-  std::cout<<c[10].x<<std::endl;
-  std::cout<<buffA[10].x<<std::endl;
+  for(int i=0;i<dim_x4*dim_y;i++) {
+    if(c[i].x != a[i].x) {
+        std::cout<<"Bad output at: "<<i<<" "<<c[i].x<<" "<<a[i].x<<std::endl;
+        return 0;
+    }
+    }
 }
