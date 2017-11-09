@@ -9,25 +9,25 @@ __global__ void Copy(Float4 *cSrc, Float4 *cDst) {
     int by = hipBlockIdx_y;
 
     
-  int c0_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*0;
-  int c1_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*1;
-  int c2_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*2;
-  int c3_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*3;
+  int c0_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + dim_x4*0;
+  int c1_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + dim_x4*1;
+  int c2_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + dim_x4*2;
+  int c3_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + dim_x4*3;
 
-  int c4_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*0 + half_tilex4;
-  int c5_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*1 + half_tilex4;
-  int c6_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*2 + half_tilex4;
-  int c7_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tilex4 + dim_x4*3 + half_tilex4;
+  int c4_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + dim_x4*0 + half_tilex4;
+  int c5_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + dim_x4*1 + half_tilex4;
+  int c6_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + dim_x4*2 + half_tilex4;
+  int c7_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + dim_x4*3 + half_tilex4;
 
-  int c8_id  = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + dim_x4*0;
-  int c9_id  = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + dim_x4*1;
-  int c10_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + dim_x4*2;
-  int c11_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + dim_x4*3;
+  int c8_id  = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + half_tile * dim_x4 + dim_x4*0;
+  int c9_id  = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + half_tile * dim_x4 + dim_x4*1;
+  int c10_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + half_tile * dim_x4 + dim_x4*2;
+  int c11_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + half_tile * dim_x4 + dim_x4*3;
 
-  int c12_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + half_tilex4 + dim_x4*0;
-  int c13_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + half_tilex4 + dim_x4*1;
-  int c14_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + half_tilex4 + dim_x4*2;
-  int c15_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tilex4 + half_tilex4 * dim_x4 + half_tilex4 + dim_x4*3;
+  int c12_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + half_tile * dim_x4 + half_tilex4 + dim_x4*0;
+  int c13_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + half_tile * dim_x4 + half_tilex4 + dim_x4*1;
+  int c14_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + half_tile * dim_x4 + half_tilex4 + dim_x4*2;
+  int c15_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + half_tile * dim_x4 + half_tilex4 + dim_x4*3;
 
 
     cDst[c0_id] = cSrc[c0_id];
@@ -62,7 +62,7 @@ int main() {
         Ad[i] = Float4(1.0f);
         Bd[i] = Float4(0.0f);
     }
-    hipLaunchKernelGGL(Copy, dim3(dim_x4/(8*16), dim_y4/(8*16), 1), dim3(16,16,1), 0, 0, Ad, Bd);
+    hipLaunchKernelGGL(Copy, dim3(dim_x4/(2*16), dim_y4/(2*16), 1), dim3(16,16,1), 0, 0, Ad, Bd);
     hipDeviceSynchronize();
     for(int i=0;i<dim_x4*dim_y;i++) {
         if(Bd[i].x != Ad[i].x || Bd[i].y != Ad[i].y || Bd[i].z != Ad[i].z || Bd[i].w != Ad[i].w) {
