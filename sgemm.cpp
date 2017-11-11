@@ -4,17 +4,7 @@
 #include "outer_product.h"
 #include "global_ops.h"
 #include "shared_ops.h"
-
-constexpr uint32_t dim_x = 4096;
-constexpr uint32_t dim_y = 4096;
-constexpr uint32_t dim_x4 = dim_x / 4;
-constexpr uint32_t dim_y4 = dim_y / 4;
-constexpr uint32_t unroll_factor = 8;
-constexpr uint32_t tile = 128;
-constexpr uint32_t tilex4 = tile / 4;
-constexpr uint32_t half_tile = 64;
-constexpr uint32_t half_tilex4 = 64 / 4;
-constexpr size_t size = dim_x * dim_y * sizeof(float);
+#include "dims.h"
 
 __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, Float4 *buffA, Float4 *buffB) {
   int tx = hipThreadIdx_x;
@@ -92,39 +82,6 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, Float4 *buffA, Float4 *bu
   int a_shared_id = (tx + (ty % 2) * 16 + (ty / 2) * dim_x4);
   int b_shared_id = (tx + (ty % 2) * 16 + (ty / 2) * dim_x4);
 
-  uint32_t redA, redB, blueA, blueB;
-  shared_init(redA, redB, blueA, blueB);
-
-  uint32_t redA_write_id = redA + a_shared_id*16;
-  uint32_t redB_write_id = redB + b_shared_id*16;
-
-  uint32_t redA_read_id0 = redA + tx * 16;
-  uint32_t redA_read_id1 = redA + (tx + 16) * 16;
-  uint32_t redB_read_id0 = redB + ty * 16;
-  uint32_t redB_read_id1 = redB + (ty + 16) * 16;
-
-/**
-* Wait for A and B
-  As 16 is too high, wait for C too
-  lgkmcnt<16>();
-*/
-  lgkmcnt<0>();
-
-  shared_write_b128(a, redA_write_id);
-  shared_write_b128(b, redB_write_id);
-
-  // Wait for C load and a, b writes
-  // I am forced to use 0 cnt as there is no way to wait just on lds rd/wr ops
-  lgkmcnt<0>();
-
-  shared_read_b128(a0, redA_read_id0);
-  shared_read_b128(a1, redA_read_id1);
-  shared_read_b128(b0, redB_read_id0);
-  shared_read_b128(b1, redB_read_id1);
-
-  // Wait for reads from A and B lds
-  lgkmcnt<0>();
-
 /*
   uint32_t redA_read_id0 = tx;
   uint32_t redA_read_id1 = (tx + 16);
@@ -143,10 +100,59 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, Float4 *buffA, Float4 *bu
   b1 = sB[redB_read_id1];
 */
 
+
+  uint32_t redA, redB, blueA, blueB;
+  shared_init(redA, redB, blueA, blueB);
+
+  uint32_t redA_write_id = redA + a_shared_id*16;
+  uint32_t redB_write_id = redB + b_shared_id*16;
+
+  uint32_t redA_read_id0 = redA + tx * 16;
+  uint32_t redA_read_id1 = redA + (tx + 16) * 16;
+  uint32_t redB_read_id0 = redB + ty * 16;
+  uint32_t redB_read_id1 = redB + (ty + 16) * 16;
+/**
+* Wait for A and B
+  As 16 is too high, wait for C too
+  vmcnt<0>();
+*/
+  vmcnt<0>();
+
+  shared_write_b128(a, redA_write_id);
+  shared_write_b128(b, redB_write_id);
+
+  // Wait for C load and a, b writes
+  // I am forced to use 0 cnt as there is no way to wait just on lds rd/wr ops
+  lgkmcnt<0>();
+
+
+for(int i=0;i<2;i++) {
+  shared_read_b128(a0, redA_read_id0);
+  shared_read_b128(a1, redA_read_id1);
+  shared_read_b128(b0, redB_read_id0);
+  shared_read_b128(b1, redB_read_id1);
+
+  // Wait for reads from A and B lds
+  lgkmcnt<0>();
+
   outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
   outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
   outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
   outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+/**
+TODO: The following pattern can be changed to use offset for lds loads
+  redA_read_id0 += 256;
+  redA_read_id1 += 256;
+  redB_read_id0 += 256;
+  redB_read_id1 += 256;
+*/
+
+  redA_read_id0 += 512;
+  redA_read_id1 += 512;
+  redB_read_id0 += 512;
+  redB_read_id1 += 512;
+}
 
   global_store(C, c[0], c0_id);
   global_store(C, c[1], c1_id);
