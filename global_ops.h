@@ -61,3 +61,22 @@ inline __device__ void lgkmcnt(){
   }
 */
 }
+
+template<uint32_t cnt>
+inline __device__ void vmcnt() {
+    if(cnt == 0) {
+      asm volatile ("\n \
+      s_waitcnt vmcnt(0) \n \
+      "::);
+    }
+    if(cnt == 1) {
+      asm volatile ("\n \
+      s_waitcnt vmcnt(1) \n \
+      "::);
+    }
+    if(cnt == 2) {
+      asm volatile ("\n \
+      s_waitcnt vmcnt(2) \n \
+      "::);
+    }
+}
