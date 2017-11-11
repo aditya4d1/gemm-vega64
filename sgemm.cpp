@@ -79,8 +79,8 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, Float4 *buffA, Float4 *bu
   global_load(C, c[14], c14_id);
   global_load(C, c[15], c15_id);
 
-  int a_shared_id = (tx + (ty % 2) * 16 + (ty / 2) * dim_x4);
-  int b_shared_id = (tx + (ty % 2) * 16 + (ty / 2) * dim_x4);
+  int a_shared_id = (tx + (ty % 2) * 16 + (ty / 2) * 32);
+  int b_shared_id = (tx + (ty % 2) * 16 + (ty / 2) * 32);
 
 /*
   uint32_t redA_read_id0 = tx;
@@ -126,7 +126,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, Float4 *buffA, Float4 *bu
   lgkmcnt<0>();
 
 
-for(int i=0;i<2;i++) {
+for(int i=0;i<unroll_factor;i++) {
   shared_read_b128(a0, redA_read_id0);
   shared_read_b128(a1, redA_read_id1);
   shared_read_b128(b0, redB_read_id0);
