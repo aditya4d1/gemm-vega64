@@ -30,14 +30,14 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, Float4 *buffA, Float4 *bu
 */
 
   Float4 a0, a1, b0, b1;
-  Float4 a, b;
+  Float4 rA0, rA1, rB0, rB1;
   Float4 c[16];
 
   int a_global_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4 + bx * 32 + by * 8192;
   int b_global_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4 + bx * 32 + by * 8192;
 
-  global_load(A, a, a_global_id);
-  global_load(B, b, b_global_id);
+  global_load(A, rA0, a_global_id);
+  global_load(B, rB0, b_global_id);
  
   int c0_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + dim_x4*0;
   int c1_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + dim_x4*1;
@@ -100,17 +100,25 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, Float4 *buffA, Float4 *bu
   b1 = sB[redB_read_id1];
 */
 
-
   uint32_t redA, redB, blueA, blueB;
   shared_init(redA, redB, blueA, blueB);
+//  shared_init(blueA, blueB, redA, redB);
 
   uint32_t redA_write_id = redA + a_shared_id*16;
   uint32_t redB_write_id = redB + b_shared_id*16;
+  uint32_t blueA_write_id = blueA + a_shared_id*16;
+  uint32_t blueB_write_id = blueB + a_shared_id*16;
 
   uint32_t redA_read_id0 = redA + tx * 16;
   uint32_t redA_read_id1 = redA + (tx + 16) * 16;
   uint32_t redB_read_id0 = redB + ty * 16;
   uint32_t redB_read_id1 = redB + (ty + 16) * 16;
+
+  uint32_t blueA_read_id0 = blueA + tx * 16;
+  uint32_t blueA_read_id1 = blueA + (tx + 16) * 16;
+  uint32_t blueB_read_id0 = blueB + tx * 16;
+  uint32_t blueB_read_id1 = blueB + (tx + 16) * 16;
+
 /**
 * Wait for A and B
   As 16 is too high, wait for C too
@@ -118,13 +126,22 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, Float4 *buffA, Float4 *bu
 */
   vmcnt<0>();
 
-  shared_write_b128(a, redA_write_id);
-  shared_write_b128(b, redB_write_id);
+/**
+Prefetch to blue lds
+*/
+
+  a_global_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4 + bx * 32 + by * 8192 + 8 * dim_x4;
+  b_global_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4 + bx * 32 + by * 8192 + 8 * dim_x4;
+ 
+  global_load(A, rA1, a_global_id);
+  global_load(B, rB1, b_global_id);
+
+  shared_write_b128(rA0, redA_write_id);
+  shared_write_b128(rB0, redB_write_id);
 
   // Wait for C load and a, b writes
   // I am forced to use 0 cnt as there is no way to wait just on lds rd/wr ops
   lgkmcnt<0>();
-
 
 for(int i=0;i<unroll_factor;i++) {
   shared_read_b128(a0, redA_read_id0);
@@ -154,6 +171,41 @@ TODO: The following pattern can be changed to use offset for lds loads
   redB_read_id1 += 512;
 }
 
+  vmcnt<0>();
+  shared_write_b128(rA1, blueA_write_id);
+  shared_write_b128(rB1, blueB_write_id);
+
+  lgkmcnt<0>();
+
+
+for(int i=0;i<unroll_factor;i++) {
+  shared_read_b128(a0, blueA_read_id0);
+  shared_read_b128(a1, blueA_read_id1);
+  shared_read_b128(b0, blueB_read_id0);
+  shared_read_b128(b1, blueB_read_id1);
+
+  // Wait for reads from A and B lds
+  lgkmcnt<0>();
+
+  outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+  outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+  outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+  outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+/**
+TODO: The following pattern can be changed to use offset for lds loads
+  redA_read_id0 += 256;
+  redA_read_id1 += 256;
+  redB_read_id0 += 256;
+  redB_read_id1 += 256;
+*/
+
+  blueA_read_id0 += 512;
+  blueA_read_id1 += 512;
+  blueB_read_id0 += 512;
+  blueB_read_id1 += 512;
+}
+
   global_store(C, c[0], c0_id);
   global_store(C, c[1], c1_id);
   global_store(C, c[2], c2_id);
@@ -174,8 +226,8 @@ TODO: The following pattern can be changed to use offset for lds loads
   global_store(C, c[14], c14_id);
   global_store(C, c[15], c15_id);
 
-  buffA[a_global_id] = a;
-  buffB[b_global_id] = b;
+  buffA[a_global_id] = rA0;
+  buffB[b_global_id] = rB0;
 
 }
 
