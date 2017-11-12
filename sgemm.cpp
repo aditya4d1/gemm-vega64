@@ -31,14 +31,14 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, Float4 *buffA, Float4 *bu
 
 
   Float4 a0, a1, a2, a3, b0, b1, b2, b3;
-  Float4 rA0, rA1, rB0, rB1;
+  Float4 rA, rB;
   Float4 c[16];
 
   int a_global_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4 + bx * 32 + by * 8192;
   int b_global_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4 + bx * 32 + by * 8192;
 
-  global_load(A, rA0, a_global_id);
-  global_load(B, rB0, b_global_id);
+  global_load(A, rA, a_global_id);
+  global_load(B, rB, b_global_id);
  
   int c0_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + dim_x4*0;
   int c1_id = tx + ty * dim_x + bx * tilex4 + by * dim_x4 * tile + dim_x4*1;
@@ -159,8 +159,8 @@ Prefetch to blue lds
 * do iter7
 */
 vmcnt<0>();
-shared_write_b128(rA0, redA_write_id);
-shared_write_b128(rB0, redB_write_id);
+shared_write_b128(rA, redA_write_id);
+shared_write_b128(rB, redB_write_id);
 lgkmcnt<0>();
 shared_read_b128(a0, redA_read_id0);
 shared_read_b128(a1, redA_read_id1);
@@ -179,14 +179,14 @@ redA_read_id1 += 512;
 redB_read_id0 += 512;
 redB_read_id1 += 512;
 
-for(int i=1;i<4096/8/2;i++) {
+for(int i=0;i<7;i++) {
 
-a_global_id += 8 * dim_x4;
-b_global_id += 8 * dim_x4;
+a_global_id += 262144;
+b_global_id += 262144;
 
 global_load(A, rA, a_global_id);
 global_load(B, rB, b_global_id);
-lkgmcnt<4>();
+lgkmcnt<4>();
 
 //outerproduct(a0, a1, b0, b1);
 outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
@@ -321,13 +321,13 @@ blueA_read_id1 += 512;
 blueB_read_id0 += 512;
 blueB_read_id1 += 512;
 
-a_global_id += 8 * dim_x4;
-b_global_id += 8 * dim_x4;
+a_global_id += 262144;
+b_global_id += 262144;
 
 global_load(A, rA, a_global_id);
 global_load(B, rB, b_global_id);
 
-lkgmcnt<4>();
+lgkmcnt<4>();
 //outerproduct(a0, a1, b0, b1);
 outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
 outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
@@ -488,8 +488,8 @@ redB_read_id1 += 512;
   global_store(C, c[14], c14_id);
   global_store(C, c[15], c15_id);
 
-  buffA[a_global_id] = rA0;
-  buffB[b_global_id] = rB0;
+  buffA[a_global_id] = rA;
+  buffB[b_global_id] = rB;
 
 }
 
