@@ -29,6 +29,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, Float4 *buffA, Float4 *bu
 * 13. Write c[16] to C
 */
 
+
   Float4 a0, a1, b0, b1;
   Float4 rA0, rA1, rB0, rB1;
   Float4 c[16];
@@ -102,7 +103,6 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, Float4 *buffA, Float4 *bu
 
   uint32_t redA, redB, blueA, blueB;
   shared_init(redA, redB, blueA, blueB);
-//  shared_init(blueA, blueB, redA, redB);
 
   uint32_t redA_write_id = redA + a_shared_id*16;
   uint32_t redB_write_id = redB + b_shared_id*16;
@@ -128,6 +128,35 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, Float4 *buffA, Float4 *bu
 
 /**
 Prefetch to blue lds
+*/
+
+/**
+* Unroll loop for unroll_factor
+* Do global_load 
+* Do lds_write
+*/
+
+/**
+* global to registers
+* registers to lds
+* read i0
+* loop starts
+* Do global to register (for next iter)
+* do iter0
+* read iter2
+* do iter1
+* read iter3
+* do iter2
+* ....
+* read iter6
+* do iter5
+* vmcnt() (for next iter)
+* registers to lds (for next iter)
+* read iter7
+* do iter6
+* lgkmcnt<>(); (wait for registers to lds)
+* read iter 0
+* do iter7
 */
 
   a_global_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4 + bx * 32 + by * 8192 + 8 * dim_x4;
