@@ -158,384 +158,314 @@ Prefetch to blue lds
 * read iter 0
 * do iter7
 */
-
-  a_global_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4 + bx * 32 + by * 8192 + 8 * dim_x4;
-  b_global_id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4 + bx * 32 + by * 8192 + 8 * dim_x4;
- 
-  global_load(A, rA1, a_global_id);
-  global_load(B, rB1, b_global_id);
-
-  shared_write_b128(rA0, redA_write_id);
-  shared_write_b128(rB0, redB_write_id);
-
-  // Wait until writes are written
-  lgkmcnt<0>();
-
-  shared_read_b128(a0, redA_read_id0);
-  shared_read_b128(a1, redA_read_id1);
-  shared_read_b128(b0, redB_read_id0);
-  shared_read_b128(b1, redB_read_id1);
-
-  redA_read_id0 += 512;
-  redA_read_id1 += 512;
-  redB_read_id0 += 512;
-  redB_read_id1 += 512;
-
-  // Start prefetching 
-  shared_read_b128(a2, redA_read_id0);
-  shared_read_b128(a3, redA_read_id1);
-  shared_read_b128(b2, redB_read_id0);
-  shared_read_b128(b3, redB_read_id1);
-
-  redA_read_id0 += 512;
-  redA_read_id1 += 512;
-  redB_read_id0 += 512;
-  redB_read_id1 += 512;
-
-  // Wait for reads to a0, a1, b0, b1
-  lgkmcnt<4>();
-
-  // Operate on a0, a1, b0, b1 - Iteration 0
-  outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
-  outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
-  outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
-  outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
-
-  // Start prefetching to a0, a1, b0, b1
-  shared_read_b128(a0, redA_read_id0);
-  shared_read_b128(a1, redA_read_id1);
-  shared_read_b128(b0, redB_read_id0);
-  shared_read_b128(b1, redB_read_id1);
-
-  redA_read_id0 += 512;
-  redA_read_id1 += 512;
-  redB_read_id0 += 512;
-  redB_read_id1 += 512;
-
-  // Wait for reads to a2, a3, b2, b3
-  lgkmcnt<4>();
-
-  // Operate on a2, a3, b2, b3 - Iteration 1
-  outerProduct4x4(a2, b2, c[0], c[1], c[2], c[3]);
-  outerProduct4x4(a2, b3, c[4], c[5], c[6], c[7]);
-  outerProduct4x4(a3, b2, c[8], c[9], c[10], c[11]);
-  outerProduct4x4(a3, b3, c[12], c[13], c[14], c[15]);
-
-  shared_read_b128(a2, redA_read_id0);
-  shared_read_b128(a3, redA_read_id1);
-  shared_read_b128(b2, redB_read_id0);
-  shared_read_b128(b3, redB_read_id1);
-
-  redA_read_id0 += 512;
-  redA_read_id1 += 512;
-  redB_read_id0 += 512;
-  redB_read_id1 += 512;
-
-  // Wait for reads to a0, a1, b0, b1
-  lgkmcnt<4>();
-
-  // Operate on a0, a1, b0, b1 - Iteration 2
-  outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
-  outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
-  outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
-  outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
-
-  shared_read_b128(a0, redA_read_id0);
-  shared_read_b128(a1, redA_read_id1);
-  shared_read_b128(b0, redB_read_id0);
-  shared_read_b128(b1, redB_read_id1);
-
-  redA_read_id0 += 512;
-  redA_read_id1 += 512;
-  redB_read_id0 += 512;
-  redB_read_id1 += 512;
-
-  // Wait for reads to a2, a3, b2, b3
-  lgkmcnt<4>();
-
-  // Operate on a2, a3, b2, b3 - Iteration 3
-  outerProduct4x4(a2, b2, c[0], c[1], c[2], c[3]);
-  outerProduct4x4(a2, b3, c[4], c[5], c[6], c[7]);
-  outerProduct4x4(a3, b2, c[8], c[9], c[10], c[11]);
-  outerProduct4x4(a3, b3, c[12], c[13], c[14], c[15]);
-
-  shared_read_b128(a2, redA_read_id0);
-  shared_read_b128(a3, redA_read_id1);
-  shared_read_b128(b2, redB_read_id0);
-  shared_read_b128(b3, redB_read_id1);
-
-  redA_read_id0 += 512;
-  redA_read_id1 += 512;
-  redB_read_id0 += 512;
-  redB_read_id1 += 512;
-
-  // Wait for reads to a0, a1, b0, b1
-  lgkmcnt<4>();
-
-  // Operate on a0, a1, b0, b1 - Iteration 4
-  outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
-  outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
-  outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
-  outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
-
-  shared_read_b128(a0, redA_read_id0);
-  shared_read_b128(a1, redA_read_id1);
-  shared_read_b128(b0, redB_read_id0);
-  shared_read_b128(b1, redB_read_id1);
-
-  redA_read_id0 += 512;
-  redA_read_id1 += 512;
-  redB_read_id0 += 512;
-  redB_read_id1 += 512;
-
-  // Wait for reads to a2, a3, b2, b3
-  lgkmcnt<4>();
-
-  // Operate on a2, a3, b2, b3 - Iteration 5
-  outerProduct4x4(a2, b2, c[0], c[1], c[2], c[3]);
-  outerProduct4x4(a2, b3, c[4], c[5], c[6], c[7]);
-  outerProduct4x4(a3, b2, c[8], c[9], c[10], c[11]);
-  outerProduct4x4(a3, b3, c[12], c[13], c[14], c[15]);
-
-  // Wait for loads from global to next lds
-  vmcnt<0>();
-  shared_write_b128(rA1, blueA_write_id);
-  shared_write_b128(rB1, blueB_write_id);
-
-  shared_read_b128(a2, redA_read_id0);
-  shared_read_b128(a3, redA_read_id1);
-  shared_read_b128(b2, redB_read_id0);
-  shared_read_b128(b3, redB_read_id1);
-
-  redA_read_id0 += 512;
-  redA_read_id1 += 512;
-  redB_read_id0 += 512;
-  redB_read_id1 += 512;
-
-  // Wait for reads to a0, a1, b0, b1
-  lgkmcnt<6>();
-
-  // Operate on a0, a1, b0, b1 - Iteration 6
-  outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
-  outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
-  outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
-  outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
-
-/** Dont need these!
-  shared_read_b128(a0, redA_read_id0);
-  shared_read_b128(a1, redA_read_id1);
-  shared_read_b128(b0, redB_read_id0);
-  shared_read_b128(b1, redB_read_id1);
-
-  redA_read_id0 += 512;
-  redA_read_id1 += 512;
-  redB_read_id0 += 512;
-  redB_read_id1 += 512;
-*/
-
-  lgkmcnt<4>();
-  shared_read_b128(a0, blueA_read_id0);
-  shared_read_b128(a1, blueA_read_id1);
-  shared_read_b128(b0, blueB_read_id0);
-  shared_read_b128(b1, blueB_read_id1);
-
-  blueA_read_id0 += 512;
-  blueA_read_id1 += 512;
-  blueB_read_id0 += 512;
-  blueB_read_id1 += 512;
-
-  // Wait for reads to a2, a3, b2, b3
-  lgkmcnt<4>();
-
-  // Operate on a2, a3, b2, b3 - Iteration 7
-  outerProduct4x4(a2, b2, c[0], c[1], c[2], c[3]);
-  outerProduct4x4(a2, b3, c[4], c[5], c[6], c[7]);
-  outerProduct4x4(a3, b2, c[8], c[9], c[10], c[11]);
-  outerProduct4x4(a3, b3, c[12], c[13], c[14], c[15]);
-
-  shared_read_b128(a2, blueA_read_id0);
-  shared_read_b128(a3, blueA_read_id1);
-  shared_read_b128(b2, blueB_read_id0);
-  shared_read_b128(b3, blueB_read_id1);
-
-  blueA_read_id0 += 512;
-  blueA_read_id1 += 512;
-  blueB_read_id0 += 512;
-  blueB_read_id1 += 512;
-
-  lgkmcnt<4>();
-  // Operate on a0, a1, b0, b1 - Iteration - 0
-  outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
-  outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
-  outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
-  outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
-
-  shared_read_b128(a0, blueA_read_id0);
-  shared_read_b128(a1, blueA_read_id1);
-  shared_read_b128(b0, blueB_read_id0);
-  shared_read_b128(b1, blueB_read_id1);
-
-  blueA_read_id0 += 512;
-  blueA_read_id1 += 512;
-  blueB_read_id0 += 512;
-  blueB_read_id1 += 512;
-
-  lgkmcnt<4>();
-
-  // Operate on a2, a3, b2, b3 - Iteration 1
-  outerProduct4x4(a2, b2, c[0], c[1], c[2], c[3]);
-  outerProduct4x4(a2, b3, c[4], c[5], c[6], c[7]);
-  outerProduct4x4(a3, b2, c[8], c[9], c[10], c[11]);
-  outerProduct4x4(a3, b3, c[12], c[13], c[14], c[15]);
-
-  shared_read_b128(a2, blueA_read_id0);
-  shared_read_b128(a3, blueA_read_id1);
-  shared_read_b128(b2, blueB_read_id0);
-  shared_read_b128(b3, blueB_read_id1);
-
-
-  blueA_read_id0 += 512;
-  blueA_read_id1 += 512;
-  blueB_read_id0 += 512;
-  blueB_read_id1 += 512;
-
-  lgkmcnt<4>();
-  // Operate on a0, a1, b0, b1 - Iteration - 2
-  outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
-  outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
-  outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
-  outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
-
-  shared_read_b128(a0, blueA_read_id0);
-  shared_read_b128(a1, blueA_read_id1);
-  shared_read_b128(b0, blueB_read_id0);
-  shared_read_b128(b1, blueB_read_id1);
-
-  blueA_read_id0 += 512;
-  blueA_read_id1 += 512;
-  blueB_read_id0 += 512;
-  blueB_read_id1 += 512;
-
-  lgkmcnt<4>();
-
-  // Operate on a2, a3, b2, b3 - Iteration 3
-  outerProduct4x4(a2, b2, c[0], c[1], c[2], c[3]);
-  outerProduct4x4(a2, b3, c[4], c[5], c[6], c[7]);
-  outerProduct4x4(a3, b2, c[8], c[9], c[10], c[11]);
-  outerProduct4x4(a3, b3, c[12], c[13], c[14], c[15]);
-
-  shared_read_b128(a2, blueA_read_id0);
-  shared_read_b128(a3, blueA_read_id1);
-  shared_read_b128(b2, blueB_read_id0);
-  shared_read_b128(b3, blueB_read_id1);
-
-
-
-  blueA_read_id0 += 512;
-  blueA_read_id1 += 512;
-  blueB_read_id0 += 512;
-  blueB_read_id1 += 512;
-
-  lgkmcnt<4>();
-  // Operate on a0, a1, b0, b1 - Iteration - 4
-  outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
-  outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
-  outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
-  outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
-
-  shared_read_b128(a0, blueA_read_id0);
-  shared_read_b128(a1, blueA_read_id1);
-  shared_read_b128(b0, blueB_read_id0);
-  shared_read_b128(b1, blueB_read_id1);
-
-  blueA_read_id0 += 512;
-  blueA_read_id1 += 512;
-  blueB_read_id0 += 512;
-  blueB_read_id1 += 512;
-
-  lgkmcnt<4>();
-
-  // Operate on a2, a3, b2, b3 - Iteration 5
-  outerProduct4x4(a2, b2, c[0], c[1], c[2], c[3]);
-  outerProduct4x4(a2, b3, c[4], c[5], c[6], c[7]);
-  outerProduct4x4(a3, b2, c[8], c[9], c[10], c[11]);
-  outerProduct4x4(a3, b3, c[12], c[13], c[14], c[15]);
-
-  shared_read_b128(a2, blueA_read_id0);
-  shared_read_b128(a3, blueA_read_id1);
-  shared_read_b128(b2, blueB_read_id0);
-  shared_read_b128(b3, blueB_read_id1);
-
-
-  blueA_read_id0 += 512;
-  blueA_read_id1 += 512;
-  blueB_read_id0 += 512;
-  blueB_read_id1 += 512;
-
-  lgkmcnt<4>();
-  // Operate on a0, a1, b0, b1 - Iteration - 6
-  outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
-  outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
-  outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
-  outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
-
-  shared_read_b128(a0, blueA_read_id0);
-  shared_read_b128(a1, blueA_read_id1);
-  shared_read_b128(b0, blueB_read_id0);
-  shared_read_b128(b1, blueB_read_id1);
-
-  blueA_read_id0 += 512;
-  blueA_read_id1 += 512;
-  blueB_read_id0 += 512;
-  blueB_read_id1 += 512;
-
-  lgkmcnt<4>();
-
-  // Operate on a2, a3, b2, b3 - Iteration 7
-  outerProduct4x4(a2, b2, c[0], c[1], c[2], c[3]);
-  outerProduct4x4(a2, b3, c[4], c[5], c[6], c[7]);
-  outerProduct4x4(a3, b2, c[8], c[9], c[10], c[11]);
-  outerProduct4x4(a3, b3, c[12], c[13], c[14], c[15]);
-
-  shared_read_b128(a2, blueA_read_id0);
-  shared_read_b128(a3, blueA_read_id1);
-  shared_read_b128(b2, blueB_read_id0);
-  shared_read_b128(b3, blueB_read_id1);
-
-
-
-
-
-/**
-for(int i=0;i<unroll_factor;i++) {
-  shared_read_b128(a0, blueA_read_id0);
-  shared_read_b128(a1, blueA_read_id1);
-  shared_read_b128(b0, blueB_read_id0);
-  shared_read_b128(b1, blueB_read_id1);
-
-  // Wait for reads from A and B lds
-  lgkmcnt<0>();
-
-  outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
-  outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
-  outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
-  outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
-
-/**
-TODO: The following pattern can be changed to use offset for lds loads
-  redA_read_id0 += 256;
-  redA_read_id1 += 256;
-  redB_read_id0 += 256;
-  redB_read_id1 += 256;
-
-
-  blueA_read_id0 += 512;
-  blueA_read_id1 += 512;
-  blueB_read_id0 += 512;
-  blueB_read_id1 += 512;
+vmcnt<0>();
+shared_write_b128(rA0, redA_write_id);
+shared_write_b128(rB0, redB_write_id);
+lgkmcnt<0>();
+shared_read_b128(a0, redA_read_id0);
+shared_read_b128(a1, redA_read_id1);
+shared_read_b128(b0, redB_read_id0);
+shared_read_b128(b1, redB_read_id1);
+redA_read_id0 += 512;
+redA_read_id1 += 512;
+redB_read_id0 += 512;
+redB_read_id1 += 512;
+shared_read_b128(a2, redA_read_id0);
+shared_read_b128(a3, redA_read_id1);
+shared_read_b128(b2, redB_read_id0);
+shared_read_b128(b3, redB_read_id1);
+redA_read_id0 += 512;
+redA_read_id1 += 512;
+redB_read_id0 += 512;
+redB_read_id1 += 512;
+
+for(int i=1;i<4096/8/2;i++) {
+
+a_global_id += 8 * dim_x4;
+b_global_id += 8 * dim_x4;
+
+global_load(A, rA, a_global_id);
+global_load(B, rB, b_global_id);
+lkgmcnt<4>();
+
+//outerproduct(a0, a1, b0, b1);
+outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+// shared_read_b128(a0, a1, b0, b1, redA, redB);
+shared_read_b128(a0, redA_read_id0);
+shared_read_b128(a1, redA_read_id1);
+shared_read_b128(b0, redB_read_id0);
+shared_read_b128(b1, redB_read_id1);
+redA_read_id0 += 512;
+redA_read_id1 += 512;
+redB_read_id0 += 512;
+redB_read_id1 += 512;
+lgkmcnt<4>();
+
+//outerproduct(a2, a3, b2, b3);
+outerProduct4x4(a2, b2, c[0], c[1], c[2], c[3]);
+outerProduct4x4(a2, b3, c[4], c[5], c[6], c[7]);
+outerProduct4x4(a3, b2, c[8], c[9], c[10], c[11]);
+outerProduct4x4(a3, b3, c[12], c[13], c[14], c[15]);
+
+//shared_read_b128(a2, a3, b2, b3, redA, redB);
+shared_read_b128(a2, redA_read_id0);
+shared_read_b128(a3, redA_read_id1);
+shared_read_b128(b2, redB_read_id0);
+shared_read_b128(b3, redB_read_id1);
+redA_read_id0 += 512;
+redA_read_id1 += 512;
+redB_read_id0 += 512;
+redB_read_id1 += 512;
+lgkmcnt<4>();
+//outerproduct(a0, a1, b0, b1);
+outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+//shared_read_b128(a0, a1, b0, b1, redA, redB);
+shared_read_b128(a0, redA_read_id0);
+shared_read_b128(a1, redA_read_id1);
+shared_read_b128(b0, redB_read_id0);
+shared_read_b128(b1, redB_read_id1);
+redA_read_id0 += 512;
+redA_read_id1 += 512;
+redB_read_id0 += 512;
+redB_read_id1 += 512;
+lgkmcnt<4>();
+//outerproduct(a2, a3, b2, b3);
+outerProduct4x4(a2, b2, c[0], c[1], c[2], c[3]);
+outerProduct4x4(a2, b3, c[4], c[5], c[6], c[7]);
+outerProduct4x4(a3, b2, c[8], c[9], c[10], c[11]);
+outerProduct4x4(a3, b3, c[12], c[13], c[14], c[15]);
+
+//shared_read_b128(a2, a3, b2, b3, redA, redB);
+shared_read_b128(a2, redA_read_id0);
+shared_read_b128(a3, redA_read_id1);
+shared_read_b128(b2, redB_read_id0);
+shared_read_b128(b3, redB_read_id1);
+redA_read_id0 += 512;
+redA_read_id1 += 512;
+redB_read_id0 += 512;
+redB_read_id1 += 512;
+lgkmcnt<4>();
+//outerproduct(a0, a1, b0, b1);
+outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+//shared_read_b128(a0, a1, b0, b1, redA, redB);
+shared_read_b128(a0, redA_read_id0);
+shared_read_b128(a1, redA_read_id1);
+shared_read_b128(b0, redB_read_id0);
+shared_read_b128(b1, redB_read_id1);
+redA_read_id0 += 512;
+redA_read_id1 += 512;
+redB_read_id0 += 512;
+redB_read_id1 += 512;
+lgkmcnt<4>();
+//outerproduct(a2, a3, b2, b3);
+outerProduct4x4(a2, b2, c[0], c[1], c[2], c[3]);
+outerProduct4x4(a2, b3, c[4], c[5], c[6], c[7]);
+outerProduct4x4(a3, b2, c[8], c[9], c[10], c[11]);
+outerProduct4x4(a3, b3, c[12], c[13], c[14], c[15]);
+
+//shared_read_b128(a2, a3, b2, b3, redA, redB);
+shared_read_b128(a2, redA_read_id0);
+shared_read_b128(a3, redA_read_id1);
+shared_read_b128(b2, redB_read_id0);
+shared_read_b128(b3, redB_read_id1);
+redA_read_id0 += 512;
+redA_read_id1 += 512;
+redB_read_id0 += 512;
+redB_read_id1 += 512;
+vmcnt<0>();
+shared_write_b128(rA, blueA);
+shared_write_b128(rB, blueB);
+lgkmcnt<6>();
+//outerproduct(a0, a1, b0, b1);
+outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+//shared_read_b128(a0, a1, b0, b1, blueA, blueB);
+shared_read_b128(a0, blueA_read_id0);
+shared_read_b128(a1, blueA_read_id1);
+shared_read_b128(b0, blueB_read_id0);
+shared_read_b128(b1, blueB_read_id1);
+blueA_read_id0 += 512;
+blueA_read_id1 += 512;
+blueB_read_id0 += 512;
+blueB_read_id1 += 512;
+
+lgkmcnt<4>();
+//outerproduct(a2, a3, b2, b3);
+outerProduct4x4(a2, b2, c[0], c[1], c[2], c[3]);
+outerProduct4x4(a2, b3, c[4], c[5], c[6], c[7]);
+outerProduct4x4(a3, b2, c[8], c[9], c[10], c[11]);
+outerProduct4x4(a3, b3, c[12], c[13], c[14], c[15]);
+
+//shared_read_b128(a2, a3, b2, b3, blueA, blueB);
+shared_read_b128(a2, blueA_read_id0);
+shared_read_b128(a3, blueA_read_id1);
+shared_read_b128(b2, blueB_read_id0);
+shared_read_b128(b3, blueB_read_id1);
+blueA_read_id0 += 512;
+blueA_read_id1 += 512;
+blueB_read_id0 += 512;
+blueB_read_id1 += 512;
+
+a_global_id += 8 * dim_x4;
+b_global_id += 8 * dim_x4;
+
+global_load(A, rA, a_global_id);
+global_load(B, rB, b_global_id);
+
+lkgmcnt<4>();
+//outerproduct(a0, a1, b0, b1);
+outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+//shared_read_b128(a0, a1, b0, b1, blueA, blueB);
+shared_read_b128(a0, blueA_read_id0);
+shared_read_b128(a1, blueA_read_id1);
+shared_read_b128(b0, blueB_read_id0);
+shared_read_b128(b1, blueB_read_id1);
+blueA_read_id0 += 512;
+blueA_read_id1 += 512;
+blueB_read_id0 += 512;
+blueB_read_id1 += 512;
+
+lgkmcnt<4>();
+//outerproduct(a2, a3, b2, b3);
+outerProduct4x4(a2, b2, c[0], c[1], c[2], c[3]);
+outerProduct4x4(a2, b3, c[4], c[5], c[6], c[7]);
+outerProduct4x4(a3, b2, c[8], c[9], c[10], c[11]);
+outerProduct4x4(a3, b3, c[12], c[13], c[14], c[15]);
+
+//shared_read_b128(a2, a3, b2, b3, blueA, blueB);
+shared_read_b128(a2, blueA_read_id0);
+shared_read_b128(a3, blueA_read_id1);
+shared_read_b128(b2, blueB_read_id0);
+shared_read_b128(b3, blueB_read_id1);
+blueA_read_id0 += 512;
+blueA_read_id1 += 512;
+blueB_read_id0 += 512;
+blueB_read_id1 += 512;
+
+lgkmcnt<4>();
+//outerproduct(a0, a1, b0, b1);
+outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+//shared_read_b128(a0, a1, b0, b1, blueA, blueB);
+shared_read_b128(a0, blueA_read_id0);
+shared_read_b128(a1, blueA_read_id1);
+shared_read_b128(b0, blueB_read_id0);
+shared_read_b128(b1, blueB_read_id1);
+blueA_read_id0 += 512;
+blueA_read_id1 += 512;
+blueB_read_id0 += 512;
+blueB_read_id1 += 512;
+
+lgkmcnt<4>();
+//outerproduct(a2, a3, b2, b3);
+outerProduct4x4(a2, b2, c[0], c[1], c[2], c[3]);
+outerProduct4x4(a2, b3, c[4], c[5], c[6], c[7]);
+outerProduct4x4(a3, b2, c[8], c[9], c[10], c[11]);
+outerProduct4x4(a3, b3, c[12], c[13], c[14], c[15]);
+
+//shared_read_b128(a2, a3, b2, b3, blueA, blueB);
+shared_read_b128(a2, blueA_read_id0);
+shared_read_b128(a3, blueA_read_id1);
+shared_read_b128(b2, blueB_read_id0);
+shared_read_b128(b3, blueB_read_id1);
+blueA_read_id0 += 512;
+blueA_read_id1 += 512;
+blueB_read_id0 += 512;
+blueB_read_id1 += 512;
+
+lgkmcnt<4>();
+//outerproduct(a0, a1, b0, b1);
+outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+//shared_read_b128(a0, a1, b0, b1, blueA, blueB);
+shared_read_b128(a0, blueA_read_id0);
+shared_read_b128(a1, blueA_read_id1);
+shared_read_b128(b0, blueB_read_id0);
+shared_read_b128(b1, blueB_read_id1);
+blueA_read_id0 += 512;
+blueA_read_id1 += 512;
+blueB_read_id0 += 512;
+blueB_read_id1 += 512;
+
+lgkmcnt<4>();
+//outerproduct(a2, a3, b2, b3);
+outerProduct4x4(a2, b2, c[0], c[1], c[2], c[3]);
+outerProduct4x4(a2, b3, c[4], c[5], c[6], c[7]);
+outerProduct4x4(a3, b2, c[8], c[9], c[10], c[11]);
+outerProduct4x4(a3, b3, c[12], c[13], c[14], c[15]);
+
+//shared_read_b128(a2, a3, b2, b3, blueA, blueB);
+shared_read_b128(a2, blueA_read_id0);
+shared_read_b128(a3, blueA_read_id1);
+shared_read_b128(b2, blueB_read_id0);
+shared_read_b128(b3, blueB_read_id1);
+blueA_read_id0 += 512;
+blueA_read_id1 += 512;
+blueB_read_id0 += 512;
+blueB_read_id1 += 512;
+
+vmcnt<0>();
+shared_write_b128(rA, redA);
+shared_write_b128(rB, redB);
+lgkmcnt<6>();
+//outerproduct(a0, a1, b0, b1);
+outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+//shared_read_b128(a0, a1, b0, b1, redA, redB);
+shared_read_b128(a0, redA_read_id0);
+shared_read_b128(a1, redA_read_id1);
+shared_read_b128(b0, redB_read_id0);
+shared_read_b128(b1, redB_read_id1);
+redA_read_id0 += 512;
+redA_read_id1 += 512;
+redB_read_id0 += 512;
+redB_read_id1 += 512;
+
+lgkmcnt<4>();
+//outerproduct(a2, a3, b2, b3);
+outerProduct4x4(a2, b2, c[0], c[1], c[2], c[3]);
+outerProduct4x4(a2, b3, c[4], c[5], c[6], c[7]);
+outerProduct4x4(a3, b2, c[8], c[9], c[10], c[11]);
+outerProduct4x4(a3, b3, c[12], c[13], c[14], c[15]);
+
+//shared_read_b128(a2, a3, b2, b3, redA, redB);
+shared_read_b128(a0, redA_read_id0);
+shared_read_b128(a1, redA_read_id1);
+shared_read_b128(b0, redB_read_id0);
+shared_read_b128(b1, redB_read_id1);
+redA_read_id0 += 512;
+redA_read_id1 += 512;
+redB_read_id0 += 512;
+redB_read_id1 += 512;
 }
-*/
-
 
 
   global_store(C, c[0], c0_id);
