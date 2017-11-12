@@ -57,6 +57,22 @@ inline __device__ void lgkmcnt(){
     s_waitcnt lgkmcnt(3) \n \
     "::);
   }
+  if(cnt == 4) {
+    asm volatile("\n \
+    s_waitcnt lgkmcnt(4) \n \
+    "::);
+  }
+  if(cnt == 5) {
+    asm volatile("\n \
+    s_waitcnt lgkmcnt(5) \n \
+    "::);
+  }
+  if(cnt == 6) {
+    asm volatile("\n \
+    s_waitcnt lgkmcnt(6) \n \
+    "::);
+  }
+
 /**
 * Disabling as 16 is to high to fit in 4bits (15 max)
   if(cnt == 16) {
