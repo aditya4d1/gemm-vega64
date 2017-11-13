@@ -179,10 +179,10 @@ redA_read_id1 += 512;
 redB_read_id0 += 512;
 redB_read_id1 += 512;
 
-for(int i=0;i<7;i++) {
+for(int i=0;i<4096/8/2/2;i++) {
 
-a_global_id += 262144;
-b_global_id += 262144;
+a_global_id += 8*dim_x4;
+b_global_id += 8*dim_x4;
 
 global_load(A, rA, a_global_id);
 global_load(B, rB, b_global_id);
@@ -280,10 +280,10 @@ shared_read_b128(a2, redA_read_id0);
 shared_read_b128(a3, redA_read_id1);
 shared_read_b128(b2, redB_read_id0);
 shared_read_b128(b3, redB_read_id1);
-redA_read_id0 += 512;
-redA_read_id1 += 512;
-redB_read_id0 += 512;
-redB_read_id1 += 512;
+redA_read_id0 = redA + tx *16;
+redA_read_id1 = redA + (tx + 16) * 16;
+redB_read_id0 = redB + tx * 16;
+redB_read_id1 = redB + (tx + 16) * 16;
 vmcnt<0>();
 shared_write_b128(rA, blueA);
 shared_write_b128(rB, blueB);
@@ -321,8 +321,8 @@ blueA_read_id1 += 512;
 blueB_read_id0 += 512;
 blueB_read_id1 += 512;
 
-a_global_id += 262144;
-b_global_id += 262144;
+a_global_id += 8 * dim_x4;
+b_global_id += 8 * dim_x4;
 
 global_load(A, rA, a_global_id);
 global_load(B, rB, b_global_id);
@@ -424,10 +424,10 @@ shared_read_b128(a2, blueA_read_id0);
 shared_read_b128(a3, blueA_read_id1);
 shared_read_b128(b2, blueB_read_id0);
 shared_read_b128(b3, blueB_read_id1);
-blueA_read_id0 += 512;
-blueA_read_id1 += 512;
-blueB_read_id0 += 512;
-blueB_read_id1 += 512;
+blueA_read_id0 = blueA + tx * 16;
+blueA_read_id1 = blueA + (tx + 16) * 16;
+blueB_read_id0 = blueB + tx * 16;
+blueB_read_id1 = blueB + (tx + 16) * 16;
 
 vmcnt<0>();
 shared_write_b128(rA, redA);
@@ -510,8 +510,14 @@ int main() {
   hipMemcpy(Ad, a.data(), size, hipMemcpyHostToDevice);
   hipMemcpy(Bd, b.data(), size, hipMemcpyHostToDevice);
   hipMemcpy(Cd, c.data(), size, hipMemcpyHostToDevice);
+  auto start = std::chrono::high_resolution_clock::now();
   hipLaunchKernelGGL(SGEMM, dim3(dim_x4/(2*16),dim_y4/(2*16),1), dim3(16,16,1), 4*sizeof(float)*8*128, 0, Ad, Bd, Cd, buffA, buffB);
   hipDeviceSynchronize();
+  auto stop = std::chrono::high_resolution_clock::now();
+  double sec = std::chrono::duration_cast<std::chrono::duration<double>>(stop - start).count();
+  std::cout<<sec<<std::endl;
+  double flops = (double)(4096)*(double)(4096)*(double)(4096);;
+  std::cout<<"Throughput: "<<flops/1.0E9<<std::endl;
   hipMemcpy(c.data(), Cd, size, hipMemcpyDeviceToHost);
 
   for(int i=0;i<dim_x4*dim_y;i++) {
