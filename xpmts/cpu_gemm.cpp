@@ -17,8 +17,8 @@ void doMatMul(float* A, float *B, float *C, size_t dim_x, size_t dim_y) {
 
 int main()
 {
-  const size_t dim_x = 4;
-  const size_t dim_y = 4;
+  const size_t dim_x = 4096;
+  const size_t dim_y = 4096;
   std::vector<float> A(dim_x*dim_y), B(dim_x*dim_y), C(dim_x*dim_y);
   for(int j=0;j<dim_y;j++) {
       for(int i=0;i<dim_x;i++) {
@@ -31,6 +31,7 @@ int main()
           }
       }
   }
+/*
     for(int j=0;j<dim_y;j++) {
       for(int i=0;i<dim_x;i++) {
         std::cout<<A[i+j*dim_x]<<" ";
@@ -45,9 +46,10 @@ int main()
       std::cout<<std::endl;
   }
   std::cout<<std::endl;
+*/
   doMatMul(A.data(), B.data(), C.data(), dim_x, dim_y);
-  for(int j=0;j<dim_y;j++) {
-      for(int i=0;i<dim_x;i++) {
+  for(int j=0;j<4;j++) {
+      for(int i=0;i<4;i++) {
         std::cout<<C[i+j*dim_x]<<" ";
       }
       std::cout<<std::endl;

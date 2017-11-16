@@ -5,6 +5,7 @@
 #include "global_ops.h"
 #include "shared_ops.h"
 #include "dims.h"
+#include <fstream>
 
 __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, Float4 *buffA, Float4 *buffB) {
   int tx = hipThreadIdx_x;
@@ -126,6 +127,54 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, Float4 *buffA, Float4 *bu
 */
   vmcnt<0>();
 
+  shared_write_b128(rA, redA_write_id);
+  shared_write_b128(rB, redB_write_id);
+  lgkmcnt<0>();
+
+  shared_read_b128(a0, redA_read_id0);
+  shared_read_b128(a1, redA_read_id1);
+  shared_read_b128(b0, redB_read_id0);
+  shared_read_b128(b1, redB_read_id1);
+  lgkmcnt<0>();
+
+  outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+  outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+  outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+  outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+  redA_read_id0 += 512;
+  redA_read_id1 += 512;
+  redB_read_id0 += 512;
+  redB_read_id1 += 512;
+
+  shared_read_b128(a0, redA_read_id0);
+  shared_read_b128(a1, redA_read_id1);
+  shared_read_b128(b0, redB_read_id0);
+  shared_read_b128(b1, redB_read_id1);
+  lgkmcnt<0>();
+
+  outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+  outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+  outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+  outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+  redA_read_id0 += 512;
+  redA_read_id1 += 512;
+  redB_read_id0 += 512;
+  redB_read_id1 += 512;
+
+  shared_read_b128(a0, redA_read_id0);
+  shared_read_b128(a1, redA_read_id1);
+  shared_read_b128(b0, redB_read_id0);
+  shared_read_b128(b1, redB_read_id1);
+  lgkmcnt<0>();
+
+  outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+  outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+  outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+  outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+
 /**
 Prefetch to blue lds
 */
@@ -158,7 +207,7 @@ Prefetch to blue lds
 * read iter 0
 * do iter7
 */
-vmcnt<0>();
+/*
 shared_write_b128(rA, redA_write_id);
 shared_write_b128(rB, redB_write_id);
 lgkmcnt<0>();
@@ -179,7 +228,7 @@ redA_read_id1 += 512;
 redB_read_id0 += 512;
 redB_read_id1 += 512;
 
-for(int i=0;i<4096/8/2/2;i++) {
+for(int i=0;i<2;i++) {
 
 a_global_id += 8*dim_x4;
 b_global_id += 8*dim_x4;
@@ -466,7 +515,7 @@ redA_read_id1 += 512;
 redB_read_id0 += 512;
 redB_read_id1 += 512;
 }
-
+*/
 
   global_store(C, c[0], c0_id);
   global_store(C, c[1], c1_id);
@@ -488,8 +537,8 @@ redB_read_id1 += 512;
   global_store(C, c[14], c14_id);
   global_store(C, c[15], c15_id);
 
-  buffA[a_global_id] = rA;
-  buffB[b_global_id] = rB;
+  buffA[c0_id] = a0;
+  buffB[c0_id] = b0;
 
 }
 
@@ -497,9 +546,20 @@ redB_read_id1 += 512;
 int main() {
   hipSetDevice(1);
   std::vector<Float4> a(dim_x4*dim_y), b(dim_x4*dim_y), c(dim_x4*dim_y);
-  std::fill(a.begin(), a.end(), 2.0f);
-  std::fill(b.begin(), b.end(), 3.0f);
-  std::fill(c.begin(), c.end(), 1.0f);
+  std::fill(c.begin(), c.end(), 0.0f);
+  float *_a = reinterpret_cast<float*>(a.data());
+  float *_b = reinterpret_cast<float*>(b.data());
+  float *_c = reinterpret_cast<float*>(c.data());
+  for(int j=0;j<dim_y;j++) {
+    for(int i=0;i<dim_x;i++) {
+      _a[i + j *dim_x] = (i + j * dim_x)*1.0f + 1.0f;
+      if(i == j) {
+        _b[i + j * dim_x] = 1.0f;
+      } else {
+        _b[i + j * dim_x] = 0.0f;
+      }
+    }
+  }
   Float4 *Ad, *Bd, *Cd;
   Float4 *buffA, *buffB;
   hipHostMalloc(&buffA, size);
@@ -519,13 +579,26 @@ int main() {
   double flops = (double)(4096)*(double)(4096)*(double)(4096);;
   std::cout<<"Throughput: "<<flops/1.0E9<<std::endl;
   hipMemcpy(c.data(), Cd, size, hipMemcpyDeviceToHost);
-
-  for(int i=0;i<dim_x4*dim_y;i++) {
-    if(c[i].x != 7.0f) {
-        std::cout<<"Bad output at: "<<i<<" "<<c[i].x<<" "<<a[i].x<<std::endl;
+for(int i=0;i<8;i++) {
+  std::cout<<buffA[i].x<<" "<<buffB[i].x<<std::endl;
+  std::cout<<buffA[i].y<<" "<<buffB[i].y<<std::endl;
+  std::cout<<buffA[i].z<<" "<<buffB[i].z<<std::endl;
+  std::cout<<buffA[i].w<<" "<<buffB[i].w<<std::endl;
+}
+    std::ofstream outfile;
+    outfile.open("outfile.txt");
+  for(int j=0;j<dim_y;j++) {
+    for(int i=0;i<dim_x;i++) {
+        outfile << _c[j+i*dim_y] <<" ";
+/*
+      if(_c[j+i*dim_y] - float(i+j*dim_x)+1.0f > 0.1f) {
+        std::cout<<"Bad Output at: "<<i<<" "<<j<<" got: "<<_c[i+j*dim_x]<<" expected: "<<float(i+j*dim_x)+1.0f<<std::endl;
         return 0;
+      }
+*/
     }
+        outfile <<"\n\n\n";
   }
-  std::cout<<buffA[10].x<<" "<<buffB[10].x<<std::endl;
+  outfile.close();
   std::cout<<c[10].x<<std::endl;
 }

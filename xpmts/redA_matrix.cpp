@@ -9,8 +9,9 @@ __global__ void Copy(Float4 *cSrc, Float4 *cDst) {
     int by = hipBlockIdx_y;
 
     int id = tx + (ty % 2) * 16 + (ty / 2) * dim_x4 + bx * 32 + by * 8192;
+    Float4 c[16];
     for(int i = 0; i< 16;i++) {
-        cDst[id + i * 262144] = cSrc[id + i * 262144];
+        c[i] = cSrc[id + i * 262144];
     }
 }
 

@@ -58,16 +58,22 @@ int main() {
     Float4 *Ad, *Bd;
     hipHostMalloc(&Ad, size);
     hipHostMalloc(&Bd, size);
-    for(int i=0;i<dim_x4*dim_y;i++) {
-        Ad[i] = Float4(1.0f);
-        Bd[i] = Float4(0.0f);
+    float* ad = reinterpret_cast<float*>(Ad);
+    float* bd = reinterpret_cast<float*>(Bd);
+    for(int j=0;j<dim_y;j++) {
+        for(int i=0;i<dim_x;i++) {
+            ad[i+j*dim_x] = float(i+j*dim_x) + 1.0f;
+            bd[i+j*dim_x] = 0.0f;
+        }
     }
     hipLaunchKernelGGL(Copy, dim3(dim_x4/(2*16), dim_y4/(2*16), 1), dim3(16,16,1), 0, 0, Ad, Bd);
     hipDeviceSynchronize();
-    for(int i=0;i<dim_x4*dim_y;i++) {
-        if(Bd[i].x != Ad[i].x || Bd[i].y != Ad[i].y || Bd[i].z != Ad[i].z || Bd[i].w != Ad[i].w) {
-            std::cout<<"Bad output at: "<<i<<std::endl;
-            return 0;
+    for(int j=0; j<dim_y;j++) {
+        for(int i=0;i<dim_x;i++) {
+            if(ad[i+j*dim_x] != float(i+j*dim_x) + 1.0f) {
+                std::cout<<"Bad output at: "<<i+j*dim_x<<std::endl;
+                return 0;
+            }
         }
     }
 
