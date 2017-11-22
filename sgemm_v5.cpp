@@ -1,9 +1,9 @@
 /**
-* Working code for
+* Not - Working code for
 * 1. Global load from A, B and C (asm)
 * 2. Write to LDS (asm)
-* 3. Read from LDS
-* 4. One iteration of outer product
+* 3. Read from LDS (asm)
+* 4. 8 iteration of outer product
 * 5. Store to global (asm)
 */
 
@@ -22,11 +22,11 @@ constexpr uint32_t xDim4 = 32;
 constexpr uint32_t xDim8 = xDim/8;
 constexpr size_t Size = xDim * yDim * sizeof(float);
 
-__global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *getGlobalCId, Float4 *getGlobalC) {
+__global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *getGlobalCId) {
     int tx = hipThreadIdx_x;
     int ty = hipThreadIdx_y;
 
-    Float4 a0, a1, b0, b1, ra, rb;
+    Float4 a0, a1, b0, b1;
     Float4 c[16];
 
     int id = tx + (ty % 2) * 16 + (ty / 2) * xDim4;
@@ -52,7 +52,6 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     int cid14= tx + ty * 4 * xDim4 + 16 + 64*32 + 2*32;
     int cid15= tx + ty * 4 * xDim4 + 16 + 64*32 + 3*32;
 
-
     global_load(C, c[0], cid0);
     global_load(C, c[1], cid1);
     global_load(C, c[2], cid2);
@@ -73,64 +72,39 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     global_load(C, c[14], cid14);
     global_load(C, c[15], cid15);
 
-    vmcnt<0>();
-
-    getGlobalCId[tx + ty * 16] = cid12;
+    Float4 ra, rb;
 
     global_load(A, ra, id);
     global_load(B, rb, id);
 
     vmcnt<0>();
 
-    getGlobalC[tx + ty * 16] = ra;
+    getGlobalCId[tx + ty * 16] = cid12;
 
-    __shared__ Float4 sA[8*32];
-    __shared__ Float4 sB[8*32];
+    uint32_t sA = 0;
+    uint32_t sB = 4096;
 
-    sA[id] = A[id];
-    sB[id] = B[id];
-
-    a0 = sA[tx];
-    a1 = sA[tx + 16];
-    b0 = sB[ty];
-    b1 = sB[ty + 16];
-
-
-/*
-    uint32_t redA, redB, blueA, blueB;
-    shared_init(redA, redB, blueA, blueB);
-
-    uint32_t redA_write_id = redA + id * 16;
-    uint32_t redB_write_id = redB + id * 16;
-
-    uint32_t redA_read_id0 = redA + tx * 16;
-    uint32_t redA_read_id1 = redA + (tx + 16) * 16;
-    uint32_t redB_read_id0 = redB + ty * 16;
-    uint32_t redB_read_id1 = redB + (ty + 16) * 16;
-
-
-    shared_write_b128(ra, redA_write_id);
-    shared_write_b128(rb, redB_write_id);
-
-    lgkmcnt<0>();
-    vmcnt<0>();
-
-    shared_read_b128(a0, redA_read_id1);
-    shared_read_b128(a1, redA_read_id1);
-    shared_read_b128(b0, redB_read_id1);
-    shared_read_b128(b1, redB_read_id1);
-    lgkmcnt<0>();
-    vmcnt<0>();
-*/
-
-    getGlobalC[tx + ty * 16] = rb;
+    asm volatile("\n \
+    ds_write_b128 %0, %2 \n \
+    ds_write_b128 %1, %3 \n \
+    s_waitcnt lgkmcnt(0) \n \
+    "
+    :
+    :"v"(sA + id*16), "v"(sB + id*16), "v"(ra), "v"(rb)
+    );
 
     for(int i=0;i<8;i++) {
 
-    a0 = sA[tx + i * 32];
-    a1 = sA[tx + i * 32 + 16];
-    b0 = sB[ty + i * 32];
-    b1 = sB[ty + i * 32 + 16];
+    asm volatile("\n \
+    ds_read_b128 %0, %4 \n \
+    ds_read_b128 %1, %5 \n \
+    ds_read_b128 %2, %6 \n \
+    ds_read_b128 %3, %7 \n \
+    s_waitcnt lgkmcnt(0) \n \
+    "
+    :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
+    :"v"(sA + (ty + i*32)*16), "v"(sA + (ty+16+i*32)*16), "v"(sB + (tx+i*32)*16), "v"(sB + (tx+16+i*32)*16)
+    );
 
     c[0].x += a0.x * b0.x;
     c[0].y += a0.x * b0.y;
@@ -153,46 +127,45 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     c[3].w += a0.w * b0.w;
 
 
-    c[4].x += a1.x * b0.x;
-    c[4].y += a1.x * b0.y;
-    c[4].z += a1.x * b0.z;
-    c[4].w += a1.x * b0.w;
+    c[4].x += a0.x * b1.x;
+    c[4].y += a0.x * b1.y;
+    c[4].z += a0.x * b1.z;
+    c[4].w += a0.x * b1.w;
 
-    c[5].x += a1.y * b0.x;
-    c[5].y += a1.y * b0.y;
-    c[5].z += a1.y * b0.z;
-    c[5].w += a1.y * b0.w;
+    c[5].x += a0.y * b1.x;
+    c[5].y += a0.y * b1.y;
+    c[5].z += a0.y * b1.z;
+    c[5].w += a0.y * b1.w;
 
-    c[6].x += a1.z * b0.x;
-    c[6].y += a1.z * b0.y;
-    c[6].z += a1.z * b0.z;
-    c[6].w += a1.z * b0.w;
+    c[6].x += a0.z * b1.x;
+    c[6].y += a0.z * b1.y;
+    c[6].z += a0.z * b1.z;
+    c[6].w += a0.z * b1.w;
 
-    c[7].x += a1.w * b0.x;
-    c[7].y += a1.w * b0.y;
-    c[7].z += a1.w * b0.z;
-    c[7].w += a1.w * b0.w;
+    c[7].x += a0.w * b1.x;
+    c[7].y += a0.w * b1.y;
+    c[7].z += a0.w * b1.z;
+    c[7].w += a0.w * b1.w;
 
+    c[8].x += a1.x * b0.x;
+    c[8].y += a1.x * b0.y;
+    c[8].z += a1.x * b0.z;
+    c[8].w += a1.x * b0.w;
 
-    c[8].x += a0.x * b1.x;
-    c[8].y += a0.x * b1.y;
-    c[8].z += a0.x * b1.z;
-    c[8].w += a0.x * b1.w;
+    c[9].x += a1.y * b0.x;
+    c[9].y += a1.y * b0.y;
+    c[9].z += a1.y * b0.z;
+    c[9].w += a1.y * b0.w;
 
-    c[9].x += a0.y * b1.x;
-    c[9].y += a0.y * b1.y;
-    c[9].z += a0.y * b1.z;
-    c[9].w += a0.y * b1.w;
+    c[10].x += a1.z * b0.x;
+    c[10].y += a1.z * b0.y;
+    c[10].z += a1.z * b0.z;
+    c[10].w += a1.z * b0.w;
 
-    c[10].x += a0.z * b1.x;
-    c[10].y += a0.z * b1.y;
-    c[10].z += a0.z * b1.z;
-    c[10].w += a0.z * b1.w;
-
-    c[11].x += a0.w * b1.x;
-    c[11].y += a0.w * b1.y;
-    c[11].z += a0.w * b1.z;
-    c[11].w += a0.w * b1.w;
+    c[11].x += a1.z * b0.x;
+    c[11].y += a1.z * b0.y;
+    c[11].z += a1.z * b0.z;
+    c[11].w += a1.z * b0.w;
 
 
     c[12].x += a1.x * b1.x;
@@ -214,7 +187,6 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     c[15].y += a1.w * b1.y;
     c[15].z += a1.w * b1.z;
     c[15].w += a1.w * b1.w;
-
 }
 
     global_store(C, c[0], cid0);
@@ -238,6 +210,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     global_store(C, c[15], cid15);
 
     vmcnt<0>();
+
 }
 
 
@@ -251,7 +224,7 @@ int main() {
 
     for(int j=0;j<yDim;j++) {
         for(int i=0;i<xDim;i++) {
-            _a[i + j * xDim] = float(i+j*xDim) + 1.0f;
+            _a[i + j * xDim] = (i+j*xDim) + 1.0f;;
             _b[i + j * xDim] = 1.0f;
         }
     }
@@ -260,8 +233,6 @@ int main() {
     int *buffA, *buffB;
     hipHostMalloc(&buffA, 16*16*sizeof(int));
     hipHostMalloc(&buffB, 16*16*sizeof(int));
-    Float4 *getGlobalC;
-    hipHostMalloc(&getGlobalC, 16*16*sizeof(Float4));
     hipMalloc(&Ad, Size);
     hipMalloc(&Bd, Size);
     hipMalloc(&Cd, Size);
@@ -269,9 +240,8 @@ int main() {
     hipMemcpy(Bd, b.data(), b.size()*sizeof(Float4), hipMemcpyHostToDevice);
     hipMemcpy(Cd, c.data(), c.size()*sizeof(Float4), hipMemcpyHostToDevice);
     auto start = std::chrono::high_resolution_clock::now();
-    hipLaunchKernelGGL(SGEMM, dim3(1,1,1), dim3(16,16,1), 4*sizeof(float)*8*128*2, 0, Ad, Bd, Cd, buffA, buffB, getGlobalC);
+    hipLaunchKernelGGL(SGEMM, dim3(1,1,1), dim3(16,16,1), 4*sizeof(float)*8*128*2, 0, Ad, Bd, Cd, buffA, buffB);
     hipDeviceSynchronize();
-    std::fill(c.begin(), c.end(), 0.0f);
     auto stop = std::chrono::high_resolution_clock::now();
     double sec = std::chrono::duration_cast<std::chrono::duration<double>>(stop - start).count();
     std::cout<<sec<<std::endl;
@@ -280,25 +250,12 @@ int main() {
     outfile.open("outfile.txt");
 
     for(int j=0;j<xDim;j++) {
-        if(j%4 == 0) {
-            outfile<<"\n";
-            outfile<<"Iter: "<<j<<"\n";
-        }
-
         for(int i=0;i<xDim;i++) {
             outfile << _c[i+j*xDim] <<" ";
         }
         outfile <<"\n";
     }
     outfile<<"\n\n\n";
-    for(int j=0;j<yDim;j++) {
-        for(int i=0;i<xDim;i++) {
-            outfile << _a[i+j*xDim] <<" ";
-        }
-        outfile <<"\n";
-    }
-    outfile<<"\n\n\n";
-
     for(int j=0;j<16;j++) {
         for(int i=0;i<16;i++) {
             outfile << buffA[i+j*16]<<" ";
@@ -312,13 +269,6 @@ int main() {
         }
         outfile << "\n";
     }
-    for(int j=0;j<8;j++) {
-        for(int i=0;i<128;i++) {
-            outfile << *(reinterpret_cast<float*>(getGlobalC) + (i+j*128))<<" ";
-        }
-        outfile << "\n";
-    }
-
     outfile<<"\n\n\n";
     outfile.close();
 }

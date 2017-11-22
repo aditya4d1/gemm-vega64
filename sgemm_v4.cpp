@@ -81,14 +81,15 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
 
     getGlobalCId[tx + ty * 16] = cid12;
 
-/*
+
     __shared__ Float4 sA[8*32];
     __shared__ Float4 sB[8*32];
 
-    sA[id] = A[id];
-    sB[id] = B[id];
-*/
+    sA[id] = ra;
+    sB[id] = rb;
 
+
+/*
     uint32_t redA, redB, blueA, blueB;
     shared_init(redA, redB, blueA, blueB);
 
@@ -103,22 +104,23 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     uint32_t redA_read_id1 = redA + (ty + 16) * 16;
     uint32_t redB_read_id0 = redB + tx * 16;
     uint32_t redB_read_id1 = redB + (tx + 16) * 16;
-    
+*/
 
     for(int i=0; i< 1;i++) {
-/*
+
     a0 = sA[ty + i*32];
     a1 = sA[ty+16 + i*32];
     b0 = sB[tx + i*32];
     b1 = sB[tx+16 + i*32];
-*/
+
+/*
     shared_read_b128(a0, redA_read_id0);
     shared_read_b128(a1, redA_read_id1);
     shared_read_b128(b0, redB_read_id0);
     shared_read_b128(b1, redB_read_id1);
 
     lgkmcnt<0>();
-
+*/
     c[0].x += a0.x * b0.x;
     c[0].y += a0.x * b0.y;
     c[0].z += a0.x * b0.z;
