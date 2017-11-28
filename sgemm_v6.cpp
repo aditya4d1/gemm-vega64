@@ -91,17 +91,6 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     uint32_t blueA = 8192;
     uint32_t blueB = 12288;
 
-/*
-    asm volatile("\n \
-    ds_write_b128 %0, %2 \n \
-    ds_write_b128 %1, %3 \n \
-    s_waitcnt lgkmcnt(0) \n \
-    "
-    :
-    :"v"(redA + id*16), "v"(redB + id*16), "v"(ra), "v"(rb)
-    );
-*/
-
     uint32_t redA0 = redA+id*16;
     uint32_t redB0 = redB+id*16;
     shared_write_b128(ra, redA0);
@@ -136,89 +125,6 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
     outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
 
-/*
-    c[0].x += a0.x * b0.x;
-    c[0].y += a0.x * b0.y;
-    c[0].z += a0.x * b0.z;
-    c[0].w += a0.x * b0.w;
-
-    c[1].x += a0.y * b0.x;
-    c[1].y += a0.y * b0.y;
-    c[1].z += a0.y * b0.z;
-    c[1].w += a0.y * b0.w;
-
-    c[2].x += a0.z * b0.x;
-    c[2].y += a0.z * b0.y;
-    c[2].z += a0.z * b0.z;
-    c[2].w += a0.z * b0.w;
-
-    c[3].x += a0.w * b0.x;
-    c[3].y += a0.w * b0.y;
-    c[3].z += a0.w * b0.z;
-    c[3].w += a0.w * b0.w;
-
-
-    c[4].x += a0.x * b1.x;
-    c[4].y += a0.x * b1.y;
-    c[4].z += a0.x * b1.z;
-    c[4].w += a0.x * b1.w;
-
-    c[5].x += a0.y * b1.x;
-    c[5].y += a0.y * b1.y;
-    c[5].z += a0.y * b1.z;
-    c[5].w += a0.y * b1.w;
-
-    c[6].x += a0.z * b1.x;
-    c[6].y += a0.z * b1.y;
-    c[6].z += a0.z * b1.z;
-    c[6].w += a0.z * b1.w;
-
-    c[7].x += a0.w * b1.x;
-    c[7].y += a0.w * b1.y;
-    c[7].z += a0.w * b1.z;
-    c[7].w += a0.w * b1.w;
-
-    c[8].x += a1.x * b0.x;
-    c[8].y += a1.x * b0.y;
-    c[8].z += a1.x * b0.z;
-    c[8].w += a1.x * b0.w;
-
-    c[9].x += a1.y * b0.x;
-    c[9].y += a1.y * b0.y;
-    c[9].z += a1.y * b0.z;
-    c[9].w += a1.y * b0.w;
-
-    c[10].x += a1.z * b0.x;
-    c[10].y += a1.z * b0.y;
-    c[10].z += a1.z * b0.z;
-    c[10].w += a1.z * b0.w;
-
-    c[11].x += a1.z * b0.x;
-    c[11].y += a1.z * b0.y;
-    c[11].z += a1.z * b0.z;
-    c[11].w += a1.z * b0.w;
-
-
-    c[12].x += a1.x * b1.x;
-    c[12].y += a1.x * b1.y;
-    c[12].z += a1.x * b1.z;
-    c[12].w += a1.x * b1.w;
-
-    c[13].x += a1.y * b1.x;
-    c[13].y += a1.y * b1.y;
-    c[13].z += a1.y * b1.z;
-    c[13].w += a1.y * b1.w;
-
-    c[14].x += a1.z * b1.x;
-    c[14].y += a1.z * b1.y;
-    c[14].z += a1.z * b1.z;
-    c[14].w += a1.z * b1.w;
-
-    c[15].x += a1.w * b1.x;
-    c[15].y += a1.w * b1.y;
-    c[15].z += a1.w * b1.z;
-    c[15].w += a1.w * b1.w;
-*/
 
 }
 
