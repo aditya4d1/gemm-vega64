@@ -107,12 +107,12 @@ for(int j=0;j<yDim/16;j++) {
 
     lgkmcnt<0>();
 
-    for(int i=0;i<8;i++) {
+//    for(int i=0;i<8;i++) {
 
-    redA0 = redA + (ty+i*32)*16;
-    redA1 = redA + (ty+i*32+16)*16;
-    redB0 = redB + (tx+i*32)*16;
-    redB1 = redB + (tx+i*32+16)*16;
+    redA0 = redA + (ty+0*32)*16;
+    redA1 = redA + (ty+0*32+16)*16;
+    redB0 = redB + (tx+0*32)*16;
+    redB1 = redB + (tx+0*32+16)*16;
 
 
     asm volatile("\n \
@@ -122,7 +122,175 @@ for(int j=0;j<yDim/16;j++) {
     ds_read_b128 %3, %7 \n \
     "
     :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
-    :"v"(redA + (ty + i*32)*16), "v"(redA + (ty+16+i*32)*16), "v"(redB + (tx+i*32)*16), "v"(redB + (tx+16+i*32)*16)
+    :"v"(redA + (ty + 0*32)*16), "v"(redA + (ty+16+0*32)*16), "v"(redB + (tx+0*32)*16), "v"(redB + (tx+16+0*32)*16)
+    );
+
+    lgkmcnt<0>();
+
+    outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+    outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+    outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+    outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+// i = 1
+    redA0 = redA + (ty+1*32)*16;
+    redA1 = redA + (ty+1*32+16)*16;
+    redB0 = redB + (tx+1*32)*16;
+    redB1 = redB + (tx+1*32+16)*16;
+
+
+    asm volatile("\n \
+    ds_read_b128 %0, %4 \n \
+    ds_read_b128 %1, %5 \n \
+    ds_read_b128 %2, %6 \n \
+    ds_read_b128 %3, %7 \n \
+    "
+    :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
+    :"v"(redA + (ty + 1*32)*16), "v"(redA + (ty+16+1*32)*16), "v"(redB + (tx+1*32)*16), "v"(redB + (tx+16+1*32)*16)
+    );
+
+    lgkmcnt<0>();
+
+    outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+    outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+    outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+    outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+// i = 2
+    redA0 = redA + (ty+2*32)*16;
+    redA1 = redA + (ty+2*32+16)*16;
+    redB0 = redB + (tx+2*32)*16;
+    redB1 = redB + (tx+2*32+16)*16;
+
+
+    asm volatile("\n \
+    ds_read_b128 %0, %4 \n \
+    ds_read_b128 %1, %5 \n \
+    ds_read_b128 %2, %6 \n \
+    ds_read_b128 %3, %7 \n \
+    "
+    :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
+    :"v"(redA + (ty + 2*32)*16), "v"(redA + (ty+16+2*32)*16), "v"(redB + (tx+2*32)*16), "v"(redB + (tx+16+2*32)*16)
+    );
+
+    lgkmcnt<0>();
+
+    outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+    outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+    outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+    outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+// i = 3
+    redA0 = redA + (ty+3*32)*16;
+    redA1 = redA + (ty+3*32+16)*16;
+    redB0 = redB + (tx+3*32)*16;
+    redB1 = redB + (tx+3*32+16)*16;
+
+
+    asm volatile("\n \
+    ds_read_b128 %0, %4 \n \
+    ds_read_b128 %1, %5 \n \
+    ds_read_b128 %2, %6 \n \
+    ds_read_b128 %3, %7 \n \
+    "
+    :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
+    :"v"(redA + (ty + 3*32)*16), "v"(redA + (ty+16+3*32)*16), "v"(redB + (tx+3*32)*16), "v"(redB + (tx+16+3*32)*16)
+    );
+
+    lgkmcnt<0>();
+
+    outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+    outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+    outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+    outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+// i = 4
+    redA0 = redA + (ty+4*32)*16;
+    redA1 = redA + (ty+4*32+16)*16;
+    redB0 = redB + (tx+4*32)*16;
+    redB1 = redB + (tx+4*32+16)*16;
+
+
+    asm volatile("\n \
+    ds_read_b128 %0, %4 \n \
+    ds_read_b128 %1, %5 \n \
+    ds_read_b128 %2, %6 \n \
+    ds_read_b128 %3, %7 \n \
+    "
+    :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
+    :"v"(redA + (ty + 4*32)*16), "v"(redA + (ty+16+4*32)*16), "v"(redB + (tx+4*32)*16), "v"(redB + (tx+16+4*32)*16)
+    );
+
+    lgkmcnt<0>();
+
+    outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+    outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+    outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+    outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+// i = 5
+    redA0 = redA + (ty+5*32)*16;
+    redA1 = redA + (ty+5*32+16)*16;
+    redB0 = redB + (tx+5*32)*16;
+    redB1 = redB + (tx+5*32+16)*16;
+
+
+    asm volatile("\n \
+    ds_read_b128 %0, %4 \n \
+    ds_read_b128 %1, %5 \n \
+    ds_read_b128 %2, %6 \n \
+    ds_read_b128 %3, %7 \n \
+    "
+    :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
+    :"v"(redA + (ty + 5*32)*16), "v"(redA + (ty+16+5*32)*16), "v"(redB + (tx+5*32)*16), "v"(redB + (tx+16+5*32)*16)
+    );
+
+    lgkmcnt<0>();
+
+    outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+    outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+    outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+    outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+// i = 6
+    redA0 = redA + (ty+6*32)*16;
+    redA1 = redA + (ty+6*32+16)*16;
+    redB0 = redB + (tx+6*32)*16;
+    redB1 = redB + (tx+6*32+16)*16;
+
+
+    asm volatile("\n \
+    ds_read_b128 %0, %4 \n \
+    ds_read_b128 %1, %5 \n \
+    ds_read_b128 %2, %6 \n \
+    ds_read_b128 %3, %7 \n \
+    "
+    :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
+    :"v"(redA + (ty + 6*32)*16), "v"(redA + (ty+16+6*32)*16), "v"(redB + (tx+6*32)*16), "v"(redB + (tx+16+6*32)*16)
+    );
+
+    lgkmcnt<0>();
+
+    outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+    outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+    outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+    outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+// i = 7
+    redA0 = redA + (ty+7*32)*16;
+    redA1 = redA + (ty+7*32+16)*16;
+    redB0 = redB + (tx+7*32)*16;
+    redB1 = redB + (tx+7*32+16)*16;
+
+
+    asm volatile("\n \
+    ds_read_b128 %0, %4 \n \
+    ds_read_b128 %1, %5 \n \
+    ds_read_b128 %2, %6 \n \
+    ds_read_b128 %3, %7 \n \
+    "
+    :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
+    :"v"(redA + (ty + 7*32)*16), "v"(redA + (ty+16+7*32)*16), "v"(redB + (tx+7*32)*16), "v"(redB + (tx+16+7*32)*16)
     );
 
     lgkmcnt<0>();
@@ -133,7 +301,10 @@ for(int j=0;j<yDim/16;j++) {
     outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
 
 
-}
+
+
+
+//}
 
 
     global_load<0>(A, ra, a_global_id);
@@ -155,12 +326,12 @@ for(int j=0;j<yDim/16;j++) {
 
     lgkmcnt<0>();
 
-    for(int i=0;i<8;i++) {
+//    for(int i=0;i<8;i++) {
 
-    blueA0 = blueA + (ty+i*32)*16;
-    blueA1 = blueA + (ty+i*32+16)*16;
-    blueB0 = blueB + (tx+i*32)*16;
-    blueB1 = blueB + (tx+i*32+16)*16;
+    blueA0 = blueA + (ty+0*32)*16;
+    blueA1 = blueA + (ty+0*32+16)*16;
+    blueB0 = blueB + (tx+0*32)*16;
+    blueB1 = blueB + (tx+0*32+16)*16;
 
 
     asm volatile("\n \
@@ -170,7 +341,7 @@ for(int j=0;j<yDim/16;j++) {
     ds_read_b128 %3, %7 \n \
     "
     :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
-    :"v"(blueA + (ty + i*32)*16), "v"(blueA + (ty+16+i*32)*16), "v"(blueB + (tx+i*32)*16), "v"(blueB + (tx+16+i*32)*16)
+    :"v"(blueA + (ty + 0*32)*16), "v"(blueA + (ty+16+0*32)*16), "v"(blueB + (tx+0*32)*16), "v"(blueB + (tx+16+0*32)*16)
     );
 
     lgkmcnt<0>();
@@ -181,7 +352,184 @@ for(int j=0;j<yDim/16;j++) {
     outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
 
 
-}
+// i = 1
+    blueA0 = blueA + (ty+1*32)*16;
+    blueA1 = blueA + (ty+1*32+16)*16;
+    blueB0 = blueB + (tx+1*32)*16;
+    blueB1 = blueB + (tx+1*32+16)*16;
+
+
+    asm volatile("\n \
+    ds_read_b128 %0, %4 \n \
+    ds_read_b128 %1, %5 \n \
+    ds_read_b128 %2, %6 \n \
+    ds_read_b128 %3, %7 \n \
+    "
+    :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
+    :"v"(blueA + (ty + 1*32)*16), "v"(blueA + (ty+16+1*32)*16), "v"(blueB + (tx+1*32)*16), "v"(blueB + (tx+16+1*32)*16)
+    );
+
+    lgkmcnt<0>();
+
+    outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+    outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+    outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+    outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+
+// i = 2
+    blueA0 = blueA + (ty+2*32)*16;
+    blueA1 = blueA + (ty+2*32+16)*16;
+    blueB0 = blueB + (tx+2*32)*16;
+    blueB1 = blueB + (tx+2*32+16)*16;
+
+
+    asm volatile("\n \
+    ds_read_b128 %0, %4 \n \
+    ds_read_b128 %1, %5 \n \
+    ds_read_b128 %2, %6 \n \
+    ds_read_b128 %3, %7 \n \
+    "
+    :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
+    :"v"(blueA + (ty + 2*32)*16), "v"(blueA + (ty+16+2*32)*16), "v"(blueB + (tx+2*32)*16), "v"(blueB + (tx+16+2*32)*16)
+    );
+
+    lgkmcnt<0>();
+
+    outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+    outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+    outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+    outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+
+// i = 3
+    blueA0 = blueA + (ty+3*32)*16;
+    blueA1 = blueA + (ty+3*32+16)*16;
+    blueB0 = blueB + (tx+3*32)*16;
+    blueB1 = blueB + (tx+3*32+16)*16;
+
+
+    asm volatile("\n \
+    ds_read_b128 %0, %4 \n \
+    ds_read_b128 %1, %5 \n \
+    ds_read_b128 %2, %6 \n \
+    ds_read_b128 %3, %7 \n \
+    "
+    :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
+    :"v"(blueA + (ty + 3*32)*16), "v"(blueA + (ty+16+3*32)*16), "v"(blueB + (tx+3*32)*16), "v"(blueB + (tx+16+3*32)*16)
+    );
+
+    lgkmcnt<0>();
+
+    outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+    outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+    outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+    outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+
+
+// i = 4
+    blueA0 = blueA + (ty+4*32)*16;
+    blueA1 = blueA + (ty+4*32+16)*16;
+    blueB0 = blueB + (tx+4*32)*16;
+    blueB1 = blueB + (tx+4*32+16)*16;
+
+
+    asm volatile("\n \
+    ds_read_b128 %0, %4 \n \
+    ds_read_b128 %1, %5 \n \
+    ds_read_b128 %2, %6 \n \
+    ds_read_b128 %3, %7 \n \
+    "
+    :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
+    :"v"(blueA + (ty + 4*32)*16), "v"(blueA + (ty+16+4*32)*16), "v"(blueB + (tx+4*32)*16), "v"(blueB + (tx+16+4*32)*16)
+    );
+
+    lgkmcnt<0>();
+
+    outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+    outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+    outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+    outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+
+// i = 5
+    blueA0 = blueA + (ty+5*32)*16;
+    blueA1 = blueA + (ty+5*32+16)*16;
+    blueB0 = blueB + (tx+5*32)*16;
+    blueB1 = blueB + (tx+5*32+16)*16;
+
+
+    asm volatile("\n \
+    ds_read_b128 %0, %4 \n \
+    ds_read_b128 %1, %5 \n \
+    ds_read_b128 %2, %6 \n \
+    ds_read_b128 %3, %7 \n \
+    "
+    :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
+    :"v"(blueA + (ty + 5*32)*16), "v"(blueA + (ty+16+5*32)*16), "v"(blueB + (tx+5*32)*16), "v"(blueB + (tx+16+5*32)*16)
+    );
+
+    lgkmcnt<0>();
+
+    outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+    outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+    outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+    outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+
+// i = 6
+    blueA0 = blueA + (ty+6*32)*16;
+    blueA1 = blueA + (ty+6*32+16)*16;
+    blueB0 = blueB + (tx+6*32)*16;
+    blueB1 = blueB + (tx+6*32+16)*16;
+
+
+    asm volatile("\n \
+    ds_read_b128 %0, %4 \n \
+    ds_read_b128 %1, %5 \n \
+    ds_read_b128 %2, %6 \n \
+    ds_read_b128 %3, %7 \n \
+    "
+    :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
+    :"v"(blueA + (ty + 6*32)*16), "v"(blueA + (ty+16+6*32)*16), "v"(blueB + (tx+6*32)*16), "v"(blueB + (tx+16+6*32)*16)
+    );
+
+    lgkmcnt<0>();
+
+    outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+    outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+    outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+    outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+
+// i = 7
+    blueA0 = blueA + (ty+7*32)*16;
+    blueA1 = blueA + (ty+7*32+16)*16;
+    blueB0 = blueB + (tx+7*32)*16;
+    blueB1 = blueB + (tx+7*32+16)*16;
+
+
+    asm volatile("\n \
+    ds_read_b128 %0, %4 \n \
+    ds_read_b128 %1, %5 \n \
+    ds_read_b128 %2, %6 \n \
+    ds_read_b128 %3, %7 \n \
+    "
+    :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
+    :"v"(blueA + (ty + 7*32)*16), "v"(blueA + (ty+16+7*32)*16), "v"(blueB + (tx+7*32)*16), "v"(blueB + (tx+16+7*32)*16)
+    );
+
+    lgkmcnt<0>();
+
+    outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
+    outerProduct4x4(a0, b1, c[4], c[5], c[6], c[7]);
+    outerProduct4x4(a1, b0, c[8], c[9], c[10], c[11]);
+    outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
+
+
+
+//}
 
 
 }
