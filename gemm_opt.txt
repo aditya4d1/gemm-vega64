@@ -1,0 +1,23 @@
+1. Load for global + vmcnt - 0
+2. Write to LDS + lgkmcnt - 0
+3. Read from LDS + lgkmcnt - 0 (for unroll_factor = 0)
+
+Begin loop
+
+a. Load from global to same reg used for prev load
+b. inc global pointers
+c. read from lds (for unroll_factor - 1) + lgkmcnt (!= 0, 4 may be)
+d. mac for iteration = 0
+e. read from lds + lgkmcnt on prev data + mac on prev data + repeat for all 8 - 2 iterations
+For last 2 iterations,
+f. read from lds + wait on (a) + write to other lds buffer + xor + lgkmcnt on prev data + mac on prev data
+g. wait for prev lds writes (f.3) + s_barrier + read from other lds buffer + do mac on f.1
+h. load from lds for iteration - 0
+End loop
+
+1. read from lds for next mac
+2. do mac for current lds read
+
+Note:
+use 2 group of registers for red and blue
+use 2 different registers for storing read and write address
