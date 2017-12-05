@@ -32,10 +32,9 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     int bx = hipBlockIdx_x;
     int by = hipBlockIdx_y;
 
-    Float4 rA0, rA1, rB0, rB1, bA0, bA1, bB0, bB1;
+    Float4 rA[4], rB[4];
     Float4 a0, a1, b0, b1;
-    Float4 c[16];// = {0};
-
+    Float4 c[16];
     Float4 ra, rb;
 
     uint32_t redA = 0;
@@ -105,41 +104,20 @@ for(int j=0;j<yDim/8;j++) {
     shared_write_b128(ra, redA0);
     shared_write_b128(rb, redB0);
 
-    uint32_t redA1, redB1;
-
     lgkmcnt<0>();
 
-//    for(int i=0;i<8;i++) {
-
-    redA0 = redA + (ty+0*32)*16;
-    redA1 = redA + (ty+0*32+16)*16;
-    redB0 = redB + (tx+0*32)*16;
-    redB1 = redB + (tx+0*32+16)*16;
-
-/*
-    asm volatile("\n \
-    ds_read_b128 %0, %4 \n \
-    ds_read_b128 %1, %5 \n \
-    ds_read_b128 %2, %6 \n \
-    ds_read_b128 %3, %7 \n \
-    "
-    :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
-    :"v"(redA + (ty + 0*32)*16), "v"(redA + (ty+16+0*32)*16), "v"(redB + (tx+0*32)*16), "v"(redB + (tx+16+0*32)*16)
-    );
-*/
-
+    redA0 = redA + ty*16;
+    redB0 = redB + tx*16;
 
     asm volatile("\n \
     ds_read_b128 %0, %4 offset:0      \n \
-    ds_read_b128 %1, %5 offset:256   \n \
-    ds_read_b128 %2, %6 offset:0      \n \
-    ds_read_b128 %3, %7 offset:256   \n \
-    s_waitcnt lgkmcnt(0) \n \
+    ds_read_b128 %1, %4 offset:256   \n \
+    ds_read_b128 %2, %5 offset:0      \n \
+    ds_read_b128 %3, %5 offset:256   \n \
     "
     :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
-    :"v"(redA0), "v"(redA0), "v"(redB0), "v"(redB0)
+    :"v"(redA0), "v"(redB0)//, "v"(redB0), "v"(redB0)
     );
-
     lgkmcnt<0>();
 
     outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
@@ -148,22 +126,15 @@ for(int j=0;j<yDim/8;j++) {
     outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
 
 // i = 1
-    redA0 = redA + (ty+1*32)*16;
-    redA1 = redA + (ty+1*32+16)*16;
-    redB0 = redB + (tx+1*32)*16;
-    redB1 = redB + (tx+1*32+16)*16;
-
-
     asm volatile("\n \
-    ds_read_b128 %0, %4 \n \
-    ds_read_b128 %1, %5 \n \
-    ds_read_b128 %2, %6 \n \
-    ds_read_b128 %3, %7 \n \
+    ds_read_b128 %0, %4 offset:1*512      \n \
+    ds_read_b128 %1, %4 offset:1*512+256  \n \
+    ds_read_b128 %2, %5 offset:1*512      \n \
+    ds_read_b128 %3, %5 offset:1*512+256  \n \
     "
     :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
-    :"v"(redA + (ty + 1*32)*16), "v"(redA + (ty+16+1*32)*16), "v"(redB + (tx+1*32)*16), "v"(redB + (tx+16+1*32)*16)
+    :"v"(redA0), "v"(redB0)
     );
-
     lgkmcnt<0>();
 
     outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
@@ -172,22 +143,15 @@ for(int j=0;j<yDim/8;j++) {
     outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
 
 // i = 2
-    redA0 = redA + (ty+2*32)*16;
-    redA1 = redA + (ty+2*32+16)*16;
-    redB0 = redB + (tx+2*32)*16;
-    redB1 = redB + (tx+2*32+16)*16;
-
-
     asm volatile("\n \
-    ds_read_b128 %0, %4 \n \
-    ds_read_b128 %1, %5 \n \
-    ds_read_b128 %2, %6 \n \
-    ds_read_b128 %3, %7 \n \
+    ds_read_b128 %0, %4 offset:2*512 \n \
+    ds_read_b128 %1, %4 offset:2*512+256 \n \
+    ds_read_b128 %2, %5 offset:2*512 \n \
+    ds_read_b128 %3, %5 offset:2*512+256 \n \
     "
     :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
-    :"v"(redA + (ty + 2*32)*16), "v"(redA + (ty+16+2*32)*16), "v"(redB + (tx+2*32)*16), "v"(redB + (tx+16+2*32)*16)
+    :"v"(redA0), "v"(redB0)
     );
-
     lgkmcnt<0>();
 
     outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
@@ -196,22 +160,15 @@ for(int j=0;j<yDim/8;j++) {
     outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
 
 // i = 3
-    redA0 = redA + (ty+3*32)*16;
-    redA1 = redA + (ty+3*32+16)*16;
-    redB0 = redB + (tx+3*32)*16;
-    redB1 = redB + (tx+3*32+16)*16;
-
-
     asm volatile("\n \
-    ds_read_b128 %0, %4 \n \
-    ds_read_b128 %1, %5 \n \
-    ds_read_b128 %2, %6 \n \
-    ds_read_b128 %3, %7 \n \
+    ds_read_b128 %0, %4 offset:3*512 \n \
+    ds_read_b128 %1, %4 offset:3*512+256 \n \
+    ds_read_b128 %2, %5 offset:3*512 \n \
+    ds_read_b128 %3, %5 offset:3*512+256 \n \
     "
     :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
-    :"v"(redA + (ty + 3*32)*16), "v"(redA + (ty+16+3*32)*16), "v"(redB + (tx+3*32)*16), "v"(redB + (tx+16+3*32)*16)
+    :"v"(redA0), "v"(redB0)
     );
-
     lgkmcnt<0>();
 
     outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
@@ -220,22 +177,15 @@ for(int j=0;j<yDim/8;j++) {
     outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
 
 // i = 4
-    redA0 = redA + (ty+4*32)*16;
-    redA1 = redA + (ty+4*32+16)*16;
-    redB0 = redB + (tx+4*32)*16;
-    redB1 = redB + (tx+4*32+16)*16;
-
-
     asm volatile("\n \
-    ds_read_b128 %0, %4 \n \
-    ds_read_b128 %1, %5 \n \
-    ds_read_b128 %2, %6 \n \
-    ds_read_b128 %3, %7 \n \
+    ds_read_b128 %0, %4 offset:4*512 \n \
+    ds_read_b128 %1, %4 offset:4*512+256 \n \
+    ds_read_b128 %2, %5 offset:4*512 \n \
+    ds_read_b128 %3, %5 offset:4*512+256 \n \
     "
     :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
-    :"v"(redA + (ty + 4*32)*16), "v"(redA + (ty+16+4*32)*16), "v"(redB + (tx+4*32)*16), "v"(redB + (tx+16+4*32)*16)
+    :"v"(redA0), "v"(redB0)
     );
-
     lgkmcnt<0>();
 
     outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
@@ -244,22 +194,15 @@ for(int j=0;j<yDim/8;j++) {
     outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
 
 // i = 5
-    redA0 = redA + (ty+5*32)*16;
-    redA1 = redA + (ty+5*32+16)*16;
-    redB0 = redB + (tx+5*32)*16;
-    redB1 = redB + (tx+5*32+16)*16;
-
-
     asm volatile("\n \
-    ds_read_b128 %0, %4 \n \
-    ds_read_b128 %1, %5 \n \
-    ds_read_b128 %2, %6 \n \
-    ds_read_b128 %3, %7 \n \
+    ds_read_b128 %0, %4 offset:5*512 \n \
+    ds_read_b128 %1, %4 offset:5*512+256 \n \
+    ds_read_b128 %2, %5 offset:5*512 \n \
+    ds_read_b128 %3, %5 offset:5*512+256 \n \
     "
     :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
-    :"v"(redA + (ty + 5*32)*16), "v"(redA + (ty+16+5*32)*16), "v"(redB + (tx+5*32)*16), "v"(redB + (tx+16+5*32)*16)
+    :"v"(redA0), "v"(redB0)
     );
-
     lgkmcnt<0>();
 
     outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
@@ -268,22 +211,15 @@ for(int j=0;j<yDim/8;j++) {
     outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
 
 // i = 6
-    redA0 = redA + (ty+6*32)*16;
-    redA1 = redA + (ty+6*32+16)*16;
-    redB0 = redB + (tx+6*32)*16;
-    redB1 = redB + (tx+6*32+16)*16;
-
-
     asm volatile("\n \
-    ds_read_b128 %0, %4 \n \
-    ds_read_b128 %1, %5 \n \
-    ds_read_b128 %2, %6 \n \
-    ds_read_b128 %3, %7 \n \
+    ds_read_b128 %0, %4 offset:6*512 \n \
+    ds_read_b128 %1, %4 offset:6*512+256 \n \
+    ds_read_b128 %2, %5 offset:6*512 \n \
+    ds_read_b128 %3, %5 offset:6*512+256 \n \
     "
     :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
-    :"v"(redA + (ty + 6*32)*16), "v"(redA + (ty+16+6*32)*16), "v"(redB + (tx+6*32)*16), "v"(redB + (tx+16+6*32)*16)
+    :"v"(redA0), "v"(redB0)
     );
-
     lgkmcnt<0>();
 
     outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
@@ -292,22 +228,15 @@ for(int j=0;j<yDim/8;j++) {
     outerProduct4x4(a1, b1, c[12], c[13], c[14], c[15]);
 
 // i = 7
-    redA0 = redA + (ty+7*32)*16;
-    redA1 = redA + (ty+7*32+16)*16;
-    redB0 = redB + (tx+7*32)*16;
-    redB1 = redB + (tx+7*32+16)*16;
-
-
     asm volatile("\n \
-    ds_read_b128 %0, %4 \n \
-    ds_read_b128 %1, %5 \n \
-    ds_read_b128 %2, %6 \n \
-    ds_read_b128 %3, %7 \n \
+    ds_read_b128 %0, %4 offset:7*512 \n \
+    ds_read_b128 %1, %4 offset:7*512+256 \n \
+    ds_read_b128 %2, %5 offset:7*512 \n \
+    ds_read_b128 %3, %5 offset:7*512+256 \n \
     "
     :"=v"(a0),"=v"(a1), "=v"(b0), "=v"(b1)
-    :"v"(redA + (ty + 7*32)*16), "v"(redA + (ty+16+7*32)*16), "v"(redB + (tx+7*32)*16), "v"(redB + (tx+16+7*32)*16)
+    :"v"(redA0), "v"(redB0)
     );
-
     lgkmcnt<0>();
 
     outerProduct4x4(a0, b0, c[0], c[1], c[2], c[3]);
@@ -317,11 +246,6 @@ for(int j=0;j<yDim/8;j++) {
 
     redA = redA ^ 0x2000;
     redB = redB ^ 0x2000;
-
-//}
-
-
-
 
 }
     global_store<0>(C, c[0], cid0);
@@ -344,9 +268,7 @@ for(int j=0;j<yDim/8;j++) {
     global_store<16>(C, c[14], cid10);
     global_store<16>(C, c[15], cid11);
 
-
     vmcnt<0>();
-
 }
 
 
