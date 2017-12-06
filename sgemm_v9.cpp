@@ -34,102 +34,6 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
 
     Float4 rA[4], rB[4];
     Float4 c[16];
-    asm volatile ("\n \
-    v_mov_b32 %0, 0\n \
-    v_mov_b32 %1, 0\n \
-    v_mov_b32 %2, 0\n \
-    v_mov_b32 %3, 0\n \
-    v_mov_b32 %4, 0\n \
-    v_mov_b32 %5, 0\n \
-    v_mov_b32 %6, 0\n \
-    v_mov_b32 %7, 0\n \
-    v_mov_b32 %8, 0\n \
-    v_mov_b32 %9, 0\n \
-    v_mov_b32 %10, 0\n \
-    v_mov_b32 %11, 0\n \
-    v_mov_b32 %12, 0\n \
-    v_mov_b32 %13, 0\n \
-    v_mov_b32 %14, 0\n \
-    v_mov_b32 %15, 0\n "
-    :"=v"(c[0].x),"=v"(c[0].y),"=v"(c[0].z),"=v"(c[0].w),
-    "=v"(c[1].x),"=v"(c[1].y),"=v"(c[1].z),"=v"(c[1].w),
-    "=v"(c[2].x),"=v"(c[2].y),"=v"(c[2].z),"=v"(c[2].w),
-    "=v"(c[3].x),"=v"(c[3].y),"=v"(c[3].z),"=v"(c[3].w)
-    :
-    );
-
-
-    asm volatile ("\n \
-    v_mov_b32 %0, 0\n \
-    v_mov_b32 %1, 0\n \
-    v_mov_b32 %2, 0\n \
-    v_mov_b32 %3, 0\n \
-    v_mov_b32 %4, 0\n \
-    v_mov_b32 %5, 0\n \
-    v_mov_b32 %6, 0\n \
-    v_mov_b32 %7, 0\n \
-    v_mov_b32 %8, 0\n \
-    v_mov_b32 %9, 0\n \
-    v_mov_b32 %10, 0\n \
-    v_mov_b32 %11, 0\n \
-    v_mov_b32 %12, 0\n \
-    v_mov_b32 %13, 0\n \
-    v_mov_b32 %14, 0\n \
-    v_mov_b32 %15, 0\n "
-    :"=v"(c[4].x),"=v"(c[4].y),"=v"(c[4].z),"=v"(c[4].w),
-    "=v"(c[5].x),"=v"(c[5].y),"=v"(c[5].z),"=v"(c[5].w),
-    "=v"(c[6].x),"=v"(c[6].y),"=v"(c[6].z),"=v"(c[6].w),
-    "=v"(c[7].x),"=v"(c[7].y),"=v"(c[7].z),"=v"(c[7].w)
-    :
-    );
-
-    asm volatile ("\n \
-    v_mov_b32 %0, 0\n \
-    v_mov_b32 %1, 0\n \
-    v_mov_b32 %2, 0\n \
-    v_mov_b32 %3, 0\n \
-    v_mov_b32 %4, 0\n \
-    v_mov_b32 %5, 0\n \
-    v_mov_b32 %6, 0\n \
-    v_mov_b32 %7, 0\n \
-    v_mov_b32 %8, 0\n \
-    v_mov_b32 %9, 0\n \
-    v_mov_b32 %10, 0\n \
-    v_mov_b32 %11, 0\n \
-    v_mov_b32 %12, 0\n \
-    v_mov_b32 %13, 0\n \
-    v_mov_b32 %14, 0\n \
-    v_mov_b32 %15, 0\n "
-    :"=v"(c[8].x),"=v"(c[8].y),"=v"(c[8].z),"=v"(c[8].w),
-    "=v"(c[9].x),"=v"(c[9].y),"=v"(c[9].z),"=v"(c[9].w),
-    "=v"(c[10].x),"=v"(c[10].y),"=v"(c[10].z),"=v"(c[10].w),
-    "=v"(c[11].x),"=v"(c[11].y),"=v"(c[11].z),"=v"(c[11].w)
-    :
-    );
-
-    asm volatile ("\n \
-    v_mov_b32 %0, 0\n \
-    v_mov_b32 %1, 0\n \
-    v_mov_b32 %2, 0\n \
-    v_mov_b32 %3, 0\n \
-    v_mov_b32 %4, 0\n \
-    v_mov_b32 %5, 0\n \
-    v_mov_b32 %6, 0\n \
-    v_mov_b32 %7, 0\n \
-    v_mov_b32 %8, 0\n \
-    v_mov_b32 %9, 0\n \
-    v_mov_b32 %10, 0\n \
-    v_mov_b32 %11, 0\n \
-    v_mov_b32 %12, 0\n \
-    v_mov_b32 %13, 0\n \
-    v_mov_b32 %14, 0\n \
-    v_mov_b32 %15, 0\n "
-    :"=v"(c[12].x),"=v"(c[12].y),"=v"(c[12].z),"=v"(c[12].w),
-    "=v"(c[13].x),"=v"(c[13].y),"=v"(c[13].z),"=v"(c[13].w),
-    "=v"(c[14].x),"=v"(c[14].y),"=v"(c[14].z),"=v"(c[14].w),
-    "=v"(c[15].x),"=v"(c[15].y),"=v"(c[15].z),"=v"(c[15].w)
-    :
-    );
 
     Float4 ra, rb;
 
@@ -173,12 +77,33 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     ldsReadA = redA+ty*16;
     ldsReadB = redB+tx*16;
 
-    ldsWriteA = redA+id*16;
+    uint32_t ldsWrite = redA+id*16;
     ldsWriteB = redB+id*16;
+    ldsWriteA = redA+id*16;
+
+    global_load<0>(C, c[0], cid0);
+    global_load<0>(C, c[1], cid1);
+    global_load<0>(C, c[2], cid2);
+    global_load<0>(C, c[3], cid3);
+
+    global_load<16>(C, c[4], cid0);
+    global_load<16>(C, c[5], cid1);
+    global_load<16>(C, c[6], cid2);
+    global_load<16>(C, c[7], cid3);
+
+    global_load<0>(C, c[8], cid8);
+    global_load<0>(C, c[9], cid9);
+    global_load<0>(C, c[10], cid10);
+    global_load<0>(C, c[11], cid11);
+
+    global_load<16>(C, c[12], cid8);
+    global_load<16>(C, c[13], cid9);
+    global_load<16>(C, c[14], cid10);
+    global_load<16>(C, c[15], cid11);
 
     vmcnt<0>();
-    shared_write_b128(ra, ldsWriteA);
-    shared_write_b128(rb, ldsWriteB);
+    shared_write_b128<0>(ra, ldsWriteA);
+    shared_write_b128<4096>(rb, ldsWriteA);
     lgkmcnt<0>();
 
     asm volatile("\n \
@@ -188,7 +113,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     ds_read_b128 %3, %5 offset:256   \n \
     "
     :"=v"(rA[0]),"=v"(rA[1]), "=v"(rB[0]), "=v"(rB[1])
-    :"v"(ldsReadA), "v"(ldsReadB)
+    :"v"(ldsReadA),"v"(ldsReadB)
     );
 
 for(int j=1;j<yDim/8;j++) {
@@ -327,8 +252,8 @@ for(int j=1;j<yDim/8;j++) {
 
     vmcnt<0>();
 
-    shared_write_b128(ra, ldsWriteA);
-    shared_write_b128(rb, ldsWriteB);
+    shared_write_b128<0>(ra, ldsWriteA);
+    shared_write_b128<4096>(rb, ldsWriteA);
 
     lgkmcnt<2>();
 
@@ -359,28 +284,6 @@ for(int j=1;j<yDim/8;j++) {
 
 }
 
-
-Float4 d[16];
-
-global_load<0>(C, d[0], cid0);
-global_load<0>(C, d[1], cid1);
-global_load<0>(C, d[2], cid2);
-global_load<0>(C, d[3], cid3);
-
-global_load<16>(C, d[4], cid0);
-global_load<16>(C, d[5], cid1);
-global_load<16>(C, d[6], cid2);
-global_load<16>(C, d[7], cid3);
-
-global_load<0>(C, d[8], cid8);
-global_load<0>(C, d[9], cid9);
-global_load<0>(C, d[10], cid10);
-global_load<0>(C, d[11], cid11);
-
-global_load<16>(C, d[12], cid8);
-global_load<16>(C, d[13], cid9);
-global_load<16>(C, d[14], cid10);
-global_load<16>(C, d[15], cid11);
 
 asm volatile("ds_read_b128 %0, %4 offset:1*512      \n \
 ds_read_b128 %1, %4 offset:1*512+256  \n \
@@ -512,28 +415,6 @@ outerProduct4x4(rA[2], rB[2], c[0], c[1], c[2], c[3]);
 outerProduct4x4(rA[2], rB[3], c[4], c[5], c[6], c[7]);
 outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
 outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
-
-vmcnt<0>();
-
-c[0] += d[0];
-c[1] += d[1];
-c[2] += d[2];
-c[3] += d[3];
-
-c[4] += d[4];
-c[5] += d[5];
-c[6] += d[6];
-c[7] += d[7];
-
-c[8] += d[8];
-c[9] += d[9];
-c[10] += d[10];
-c[11] += d[11];
-
-c[12] += d[12];
-c[13] += d[13];
-c[14] += d[14];
-c[15] += d[15];
 
     global_store<0>(C, c[0], cid0);
     global_store<0>(C, c[1], cid1);
