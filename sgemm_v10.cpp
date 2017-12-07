@@ -50,7 +50,6 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     int b_global_id = tx + (ty % 2) * x16 + (ty / 2) * 1024 + bx * x32;
 
     int cid0 = tx + ty * 4 * xDim4 + bx * 32 + by * 1024 * 128;
-    int cid1 = 0;
 
     global_load<0>(A, ra, a_global_id);
     global_load<0>(B, rb, b_global_id);
@@ -90,53 +89,6 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     global_load<0>(tmpC, c[11], cid1);
     global_load<16>(tmpC, c[15], cid1);
 
-/*
-    int tmp = 0;
-    asm volatile("\n\
-    global_load_dwordx4 %0, %16, off \n \
-    global_load_dwordx4 %4, %16, off offset:16*4*4 \n \
-    \n \
-    v_add_u32 %17, %16, 1024 \n \
-    \n \
-    global_load_dwordx4 %1, %17, off \n \
-    global_load_dwordx4 %5, %17, off offset:16*4*4 \n \
-    \n \
-    v_add_u32 %17, %17, 1024 \n \
-    \n \
-    global_load_dwordx4 %2, %17, off \n \
-    global_load_dwordx4 %6, %17, off offset:16*4*4 \n \
-    \n \
-    v_add_u32 %17, %17, 1024 \n \
-    \n \
-    global_load_dwordx4 %3, %17, off \n \
-    global_load_dwordx4 %7, %17, off offset:16*4*4 \n \
-    \n \
-    v_add_u32 %17, %16, 65536 \n \
-    \n \
-    global_load_dwordx4 %8, %17, off \n \
-    global_load_dwordx4 %12, %17, off offset:16*4*4 \n \
-    \n \
-    v_add_u32 %17, %17, 1024 \n \
-    \n \
-    global_load_dwordx4 %9, %17, off \n \
-    global_load_dwordx4 %13, %17, off offset:16*4*4 \n \
-    \n \
-    v_add_u32 %17, %17, 1024 \n \
-    \n \
-    global_load_dwordx4 %10, %17, off \n \
-    global_load_dwordx4 %14, %17, off offset:16*4*4 \n \
-    \n \
-    v_add_u32 %17, %17, 1024 \n \
-    \n \
-    global_load_dwordx4 %11, %17, off \n \
-    global_load_dwordx4 %15, %17, off offset:16*4*4 \n \
-    ":
-    "=v"(c[0]),"=v"(c[1]),"=v"(c[2]),"=v"(c[3]),
-    "=v"(c[4]),"=v"(c[5]),"=v"(c[6]),"=v"(c[7]),
-    "=v"(c[8]),"=v"(c[9]),"=v"(c[10]),"=v"(c[11]),
-    "=v"(c[12]),"=v"(c[13]),"=v"(c[14]),"=v"(c[15])
-    :"v"(C),"v"(cid0),"v"(tmp));
-*/
     vmcnt<0>();
     shared_write_b128_off<0>(ra, ldsWriteA);
     shared_write_b128_off<4096>(rb, ldsWriteA);
@@ -152,19 +104,177 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     :"v"(ldsReadA),"v"(ldsReadB)
     );
 
-for(int j=1;j<yDim/8;j++) {
+    for(int j=1;j<yDim/8;j++) {
 
-    global_load<0>(A, ra, a_global_id);
-    global_load<0>(B, rb, b_global_id);
-    a_global_id += 8 * 1024;
-    b_global_id += 8 * 1024;
+        global_load<0>(A, ra, a_global_id);
+        global_load<0>(B, rb, b_global_id);
+        a_global_id += 8 * 1024;
+        b_global_id += 8 * 1024;
 
-    asm volatile("\n \
+        asm volatile("\n \
     ds_read_b128 %0, %4 offset:1*512      \n \
     ds_read_b128 %1, %4 offset:1*512+256  \n \
     ds_read_b128 %2, %5 offset:1*512      \n \
     ds_read_b128 %3, %5 offset:1*512+256  \n \
     "
+        :"=v"(rA[2]),"=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
+        :"v"(ldsReadA), "v"(ldsReadB)
+        );
+
+        lgkmcnt<4>();
+
+        // i = 0
+        outerProduct4x4(rA[0], rB[0], c[0], c[1], c[2], c[3]);
+        outerProduct4x4(rA[0], rB[1], c[4], c[5], c[6], c[7]);
+        outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
+        outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
+
+        asm volatile("\n \
+    ds_read_b128 %0, %4 offset:2*512 \n \
+    ds_read_b128 %1, %4 offset:2*512+256 \n \
+    ds_read_b128 %2, %5 offset:2*512 \n \
+    ds_read_b128 %3, %5 offset:2*512+256 \n \
+    "
+        :"=v"(rA[0]),"=v"(rA[1]), "=v"(rB[0]), "=v"(rB[1])
+        :"v"(ldsReadA), "v"(ldsReadB)
+        );
+
+        lgkmcnt<4>();
+
+        // i = 1
+        outerProduct4x4(rA[2], rB[2], c[0], c[1], c[2], c[3]);
+        outerProduct4x4(rA[2], rB[3], c[4], c[5], c[6], c[7]);
+        outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
+        outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
+
+        asm volatile("\n \
+    ds_read_b128 %0, %4 offset:3*512      \n \
+    ds_read_b128 %1, %4 offset:3*512+256  \n \
+    ds_read_b128 %2, %5 offset:3*512      \n \
+    ds_read_b128 %3, %5 offset:3*512+256  \n \
+    "
+        :"=v"(rA[2]),"=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
+        :"v"(ldsReadA), "v"(ldsReadB)
+        );
+
+        lgkmcnt<4>();
+
+    // i = 2
+        outerProduct4x4(rA[0], rB[0], c[0], c[1], c[2], c[3]);
+        outerProduct4x4(rA[0], rB[1], c[4], c[5], c[6], c[7]);
+        outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
+        outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
+
+        asm volatile("\n \
+    ds_read_b128 %0, %4 offset:4*512 \n \
+    ds_read_b128 %1, %4 offset:4*512+256 \n \
+    ds_read_b128 %2, %5 offset:4*512 \n \
+    ds_read_b128 %3, %5 offset:4*512+256 \n \
+    "
+        :"=v"(rA[0]),"=v"(rA[1]), "=v"(rB[0]), "=v"(rB[1])
+        :"v"(ldsReadA), "v"(ldsReadB)
+        );
+
+        lgkmcnt<4>();
+
+    // i = 3
+        outerProduct4x4(rA[2], rB[2], c[0], c[1], c[2], c[3]);
+        outerProduct4x4(rA[2], rB[3], c[4], c[5], c[6], c[7]);
+        outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
+        outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
+
+        asm volatile("\n \
+    ds_read_b128 %0, %4 offset:5*512      \n \
+    ds_read_b128 %1, %4 offset:5*512+256  \n \
+    ds_read_b128 %2, %5 offset:5*512      \n \
+    ds_read_b128 %3, %5 offset:5*512+256  \n \
+    "
+        :"=v"(rA[2]),"=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
+        :"v"(ldsReadA), "v"(ldsReadB)
+        );
+
+        lgkmcnt<4>();
+
+    // i = 4
+        outerProduct4x4(rA[0], rB[0], c[0], c[1], c[2], c[3]);
+        outerProduct4x4(rA[0], rB[1], c[4], c[5], c[6], c[7]);
+        outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
+        outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
+
+        asm volatile("\n \
+    ds_read_b128 %0, %4 offset:6*512 \n \
+    ds_read_b128 %1, %4 offset:6*512+256 \n \
+    ds_read_b128 %2, %5 offset:6*512 \n \
+    ds_read_b128 %3, %5 offset:6*512+256 \n \
+    "
+        :"=v"(rA[0]),"=v"(rA[1]), "=v"(rB[0]), "=v"(rB[1])
+        :"v"(ldsReadA), "v"(ldsReadB)
+        );
+
+        lgkmcnt<4>();
+
+    // i = 5
+        outerProduct4x4(rA[2], rB[2], c[0], c[1], c[2], c[3]);
+        outerProduct4x4(rA[2], rB[3], c[4], c[5], c[6], c[7]);
+        outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
+        outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
+
+        asm volatile("\n \
+    ds_read_b128 %0, %4 offset:7*512 \n \
+    ds_read_b128 %1, %4 offset:7*512+256 \n \
+    ds_read_b128 %2, %5 offset:7*512 \n \
+    ds_read_b128 %3, %5 offset:7*512+256 \n \
+    "
+        :"=v"(rA[2]),"=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
+        :"v"(ldsReadA), "v"(ldsReadB)
+        );
+
+        redA = redA ^ 0x2000;
+        redB = redB ^ 0x2000;
+
+        ldsWriteA = redA+id*16;
+        ldsWriteB = redB+id*16;
+        ldsReadA = redA+ty*16;
+        ldsReadB = redB+tx*16;
+
+        vmcnt<0>();
+
+        shared_write_b128_off<0>(ra, ldsWriteA);
+        shared_write_b128_off<4096>(rb, ldsWriteA);
+
+        lgkmcnt<2>();
+
+        // i = 6
+        outerProduct4x4(rA[0], rB[0], c[0], c[1], c[2], c[3]);
+        outerProduct4x4(rA[0], rB[1], c[4], c[5], c[6], c[7]);
+        outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
+        outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
+
+        lgkmcnt<0>();
+        __syncthreads();
+
+        asm volatile("\n \
+    ds_read_b128 %0, %4 offset:0      \n \
+    ds_read_b128 %1, %4 offset:256   \n \
+    ds_read_b128 %2, %5 offset:0      \n \
+    ds_read_b128 %3, %5 offset:256   \n \
+    "
+        :"=v"(rA[0]),"=v"(rA[1]), "=v"(rB[0]), "=v"(rB[1])
+        :"v"(ldsReadA), "v"(ldsReadB)
+        );
+
+    // i = 7
+        outerProduct4x4(rA[2], rB[2], c[0], c[1], c[2], c[3]);
+        outerProduct4x4(rA[2], rB[3], c[4], c[5], c[6], c[7]);
+        outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
+        outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
+    }
+
+
+    asm volatile("ds_read_b128 %0, %4 offset:1*512      \n \
+    ds_read_b128 %1, %4 offset:1*512+256  \n \
+    ds_read_b128 %2, %5 offset:1*512      \n \
+    ds_read_b128 %3, %5 offset:1*512+256"
     :"=v"(rA[2]),"=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
     :"v"(ldsReadA), "v"(ldsReadB)
     );
@@ -194,7 +304,6 @@ for(int j=1;j<yDim/8;j++) {
     outerProduct4x4(rA[2], rB[3], c[4], c[5], c[6], c[7]);
     outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
     outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
-
 
     asm volatile("\n \
     ds_read_b128 %0, %4 offset:3*512      \n \
@@ -277,180 +386,20 @@ for(int j=1;j<yDim/8;j++) {
     :"=v"(rA[2]),"=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
     :"v"(ldsReadA), "v"(ldsReadB)
     );
-
-    redA = redA ^ 0x2000;
-    redB = redB ^ 0x2000;
-
-    ldsWriteA = redA+id*16;
-    ldsWriteB = redB+id*16;
-    ldsReadA = redA+ty*16;
-    ldsReadB = redB+tx*16;
-
-    vmcnt<0>();
-
-    shared_write_b128_off<0>(ra, ldsWriteA);
-    shared_write_b128_off<4096>(rb, ldsWriteA);
-
-    lgkmcnt<2>();
-
+    lgkmcnt<4>();
     // i = 6
     outerProduct4x4(rA[0], rB[0], c[0], c[1], c[2], c[3]);
     outerProduct4x4(rA[0], rB[1], c[4], c[5], c[6], c[7]);
     outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
     outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
 
-    lgkmcnt<0>();
-    __syncthreads();
+    lgkmcnt<4>();
 
-    asm volatile("\n \
-    ds_read_b128 %0, %4 offset:0      \n \
-    ds_read_b128 %1, %4 offset:256   \n \
-    ds_read_b128 %2, %5 offset:0      \n \
-    ds_read_b128 %3, %5 offset:256   \n \
-    "
-    :"=v"(rA[0]),"=v"(rA[1]), "=v"(rB[0]), "=v"(rB[1])
-    :"v"(ldsReadA), "v"(ldsReadB)
-    );
-
-    // i = 7
+    // i = 5
     outerProduct4x4(rA[2], rB[2], c[0], c[1], c[2], c[3]);
     outerProduct4x4(rA[2], rB[3], c[4], c[5], c[6], c[7]);
     outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
     outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
-
-}
-
-
-asm volatile("ds_read_b128 %0, %4 offset:1*512      \n \
-ds_read_b128 %1, %4 offset:1*512+256  \n \
-ds_read_b128 %2, %5 offset:1*512      \n \
-ds_read_b128 %3, %5 offset:1*512+256"
-:"=v"(rA[2]),"=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
-:"v"(ldsReadA), "v"(ldsReadB)
-);
-
-lgkmcnt<4>();
-
-// i = 0
-outerProduct4x4(rA[0], rB[0], c[0], c[1], c[2], c[3]);
-outerProduct4x4(rA[0], rB[1], c[4], c[5], c[6], c[7]);
-outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
-outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
-
-asm volatile("\n \
-ds_read_b128 %0, %4 offset:2*512 \n \
-ds_read_b128 %1, %4 offset:2*512+256 \n \
-ds_read_b128 %2, %5 offset:2*512 \n \
-ds_read_b128 %3, %5 offset:2*512+256 \n \
-"
-:"=v"(rA[0]),"=v"(rA[1]), "=v"(rB[0]), "=v"(rB[1])
-:"v"(ldsReadA), "v"(ldsReadB)
-);
-
-lgkmcnt<4>();
-
-// i = 1
-outerProduct4x4(rA[2], rB[2], c[0], c[1], c[2], c[3]);
-outerProduct4x4(rA[2], rB[3], c[4], c[5], c[6], c[7]);
-outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
-outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
-
-
-asm volatile("\n \
-ds_read_b128 %0, %4 offset:3*512      \n \
-ds_read_b128 %1, %4 offset:3*512+256  \n \
-ds_read_b128 %2, %5 offset:3*512      \n \
-ds_read_b128 %3, %5 offset:3*512+256  \n \
-"
-:"=v"(rA[2]),"=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
-:"v"(ldsReadA), "v"(ldsReadB)
-);
-
-lgkmcnt<4>();
-
-// i = 2
-outerProduct4x4(rA[0], rB[0], c[0], c[1], c[2], c[3]);
-outerProduct4x4(rA[0], rB[1], c[4], c[5], c[6], c[7]);
-outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
-outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
-
-asm volatile("\n \
-ds_read_b128 %0, %4 offset:4*512 \n \
-ds_read_b128 %1, %4 offset:4*512+256 \n \
-ds_read_b128 %2, %5 offset:4*512 \n \
-ds_read_b128 %3, %5 offset:4*512+256 \n \
-"
-:"=v"(rA[0]),"=v"(rA[1]), "=v"(rB[0]), "=v"(rB[1])
-:"v"(ldsReadA), "v"(ldsReadB)
-);
-
-lgkmcnt<4>();
-
-// i = 3
-outerProduct4x4(rA[2], rB[2], c[0], c[1], c[2], c[3]);
-outerProduct4x4(rA[2], rB[3], c[4], c[5], c[6], c[7]);
-outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
-outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
-
-asm volatile("\n \
-ds_read_b128 %0, %4 offset:5*512      \n \
-ds_read_b128 %1, %4 offset:5*512+256  \n \
-ds_read_b128 %2, %5 offset:5*512      \n \
-ds_read_b128 %3, %5 offset:5*512+256  \n \
-"
-:"=v"(rA[2]),"=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
-:"v"(ldsReadA), "v"(ldsReadB)
-);
-
-lgkmcnt<4>();
-
-// i = 4
-outerProduct4x4(rA[0], rB[0], c[0], c[1], c[2], c[3]);
-outerProduct4x4(rA[0], rB[1], c[4], c[5], c[6], c[7]);
-outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
-outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
-
-asm volatile("\n \
-ds_read_b128 %0, %4 offset:6*512 \n \
-ds_read_b128 %1, %4 offset:6*512+256 \n \
-ds_read_b128 %2, %5 offset:6*512 \n \
-ds_read_b128 %3, %5 offset:6*512+256 \n \
-"
-:"=v"(rA[0]),"=v"(rA[1]), "=v"(rB[0]), "=v"(rB[1])
-:"v"(ldsReadA), "v"(ldsReadB)
-);
-
-lgkmcnt<4>();
-
-// i = 5
-outerProduct4x4(rA[2], rB[2], c[0], c[1], c[2], c[3]);
-outerProduct4x4(rA[2], rB[3], c[4], c[5], c[6], c[7]);
-outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
-outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
-
-asm volatile("\n \
-ds_read_b128 %0, %4 offset:7*512 \n \
-ds_read_b128 %1, %4 offset:7*512+256 \n \
-ds_read_b128 %2, %5 offset:7*512 \n \
-ds_read_b128 %3, %5 offset:7*512+256 \n \
-"
-:"=v"(rA[2]),"=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
-:"v"(ldsReadA), "v"(ldsReadB)
-);
-lgkmcnt<4>();
-// i = 6
-outerProduct4x4(rA[0], rB[0], c[0], c[1], c[2], c[3]);
-outerProduct4x4(rA[0], rB[1], c[4], c[5], c[6], c[7]);
-outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
-outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
-
-lgkmcnt<4>();
-
-// i = 5
-outerProduct4x4(rA[2], rB[2], c[0], c[1], c[2], c[3]);
-outerProduct4x4(rA[2], rB[3], c[4], c[5], c[6], c[7]);
-outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
-outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
 
     tmpC = C + cid0;
     global_store<0>(tmpC, c[0]);
