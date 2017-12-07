@@ -21,7 +21,7 @@ inline __device__ void shared_init(uint32_t &redA, uint32_t &redB, uint32_t &blu
 * Example:  ds_write_b128 v2, v[4:7]
 */
 template<uint32_t offset>
-inline __device__ void shared_write_b128(Float4 &val, uint32_t &lds) {
+inline __device__ void shared_write_b128_off(Float4 &val, uint32_t &lds) {
     if(offset == 0) {
     asm volatile("\n \
         ds_write_b128 %0, %1 \n \
@@ -41,6 +41,14 @@ inline __device__ void shared_write_b128(Float4 &val, uint32_t &lds) {
     }
 }
 
+inline __device__ void shared_write_b128(Float4 &val, uint32_t &lds) {
+    asm volatile("\n \
+    ds_write_b128 %0, %1 \n \
+    "
+    :
+    :"v"(lds),"v"(val)
+    );
+}
 
 /**
 * Format:   ds_read_b128 dst, src

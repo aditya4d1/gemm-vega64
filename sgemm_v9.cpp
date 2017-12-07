@@ -102,8 +102,8 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     global_load<16>(C, c[15], cid11);
 
     vmcnt<0>();
-    shared_write_b128<0>(ra, ldsWriteA);
-    shared_write_b128<4096>(rb, ldsWriteA);
+    shared_write_b128_off<0>(ra, ldsWriteA);
+    shared_write_b128_off<4096>(rb, ldsWriteA);
     lgkmcnt<0>();
 
     asm volatile("\n \
@@ -252,8 +252,8 @@ for(int j=1;j<yDim/8;j++) {
 
     vmcnt<0>();
 
-    shared_write_b128<0>(ra, ldsWriteA);
-    shared_write_b128<4096>(rb, ldsWriteA);
+    shared_write_b128_off<0>(ra, ldsWriteA);
+    shared_write_b128_off<4096>(rb, ldsWriteA);
 
     lgkmcnt<2>();
 

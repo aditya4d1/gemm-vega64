@@ -49,26 +49,8 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     int a_global_id = tx + (ty % 2) * x16 + (ty / 2) * 1024 + by * x32;
     int b_global_id = tx + (ty % 2) * x16 + (ty / 2) * 1024 + bx * x32;
 
-//    int cid0 = tx + ty * 4 * xDim4 + bx * 32 + by * 1024 * 128;
-    int cid0 = tx + ty * 4 * xDim4 + 0*1024 + bx * 32 + by * 1024 * 128;
-    int cid1 = tx + ty * 4 * xDim4 + 1*1024 + bx * 32 + by * 1024 * 128;
-    int cid2 = tx + ty * 4 * xDim4 + 2*1024 + bx * 32 + by * 1024 * 128;
-    int cid3 = tx + ty * 4 * xDim4 + 3*1024 + bx * 32 + by * 1024 * 128;
-
-    int cid4 = tx + ty * 4 * xDim4 + 16 + 0*1024 + bx * 32 + by * 1024 * 128;
-    int cid5 = tx + ty * 4 * xDim4 + 16 + 1*1024 + bx * 32 + by * 1024 * 128;
-    int cid6 = tx + ty * 4 * xDim4 + 16 + 2*1024 + bx * 32 + by * 1024 * 128;
-    int cid7 = tx + ty * 4 * xDim4 + 16 + 3*1024 + bx * 32 + by * 1024 * 128;
-
-    int cid8 = tx + ty * 4 * xDim4 + 0*1024 + 64*1024 + bx * 32 + by * 1024 * 128;
-    int cid9 = tx + ty * 4 * xDim4 + 1*1024 + 64*1024 + bx * 32 + by * 1024 * 128;
-    int cid10= tx + ty * 4 * xDim4 + 2*1024 + 64*1024 + bx * 32 + by * 1024 * 128;
-    int cid11= tx + ty * 4 * xDim4 + 3*1024 + 64*1024 + bx * 32 + by * 1024 * 128;
-
-    int cid12= tx + ty * 4 * xDim4 + 16 + 64*1024 + 0*1024 + bx * 32 + by * 1024 * 128;
-    int cid13= tx + ty * 4 * xDim4 + 16 + 64*1024 + 1*1024 + bx * 32 + by * 1024 * 128;
-    int cid14= tx + ty * 4 * xDim4 + 16 + 64*1024 + 2*1024 + bx * 32 + by * 1024 * 128;
-    int cid15= tx + ty * 4 * xDim4 + 16 + 64*1024 + 3*1024 + bx * 32 + by * 1024 * 128;
+    int cid0 = tx + ty * 4 * xDim4 + bx * 32 + by * 1024 * 128;
+    int cid1 = 0;
 
     global_load<0>(A, ra, a_global_id);
     global_load<0>(B, rb, b_global_id);
@@ -81,76 +63,83 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     uint32_t ldsWrite = redA+id*16;
     ldsWriteB = redB+id*16;
     ldsWriteA = redA+id*16;
+
+    Float4 *tmpC = C + cid0;
+    global_load<0>(tmpC, c[0]);
+    global_load<16>(tmpC, c[4]);
+    tmpC += 1024;
+    global_load<0>(tmpC, c[1]);
+    global_load<16>(tmpC, c[5]);
+    tmpC += 1024;
+    global_load<0>(tmpC, c[2]);
+    global_load<16>(tmpC, c[6]);
+    tmpC += 1024;
+    global_load<0>(tmpC, c[3]);
+    global_load<16>(tmpC, c[7]);
+
+    tmpC = C + 64*1024;
+    global_load<0>(tmpC, c[8], cid1);
+    global_load<16>(tmpC, c[12], cid1);
+    tmpC += 1024;
+    global_load<0>(tmpC, c[9], cid1);
+    global_load<16>(tmpC, c[13], cid1);
+    tmpC += 1024;
+    global_load<0>(tmpC, c[10], cid1);
+    global_load<16>(tmpC, c[14], cid1);
+    tmpC += 1024;
+    global_load<0>(tmpC, c[11], cid1);
+    global_load<16>(tmpC, c[15], cid1);
+
 /*
-    global_load<0>(C, c[0], cid0);
-    global_load<0>(C, c[1], cid1);
-    global_load<0>(C, c[2], cid2);
-    global_load<0>(C, c[3], cid3);
-
-    global_load<16>(C, c[4], cid0);
-    global_load<16>(C, c[5], cid1);
-    global_load<16>(C, c[6], cid2);
-    global_load<16>(C, c[7], cid3);
-
-    global_load<0>(C, c[8], cid8);
-    global_load<0>(C, c[9], cid9);
-    global_load<0>(C, c[10], cid10);
-    global_load<0>(C, c[11], cid11);
-
-    global_load<16>(C, c[12], cid8);
-    global_load<16>(C, c[13], cid9);
-    global_load<16>(C, c[14], cid10);
-    global_load<16>(C, c[15], cid11);
-*/
     int tmp = 0;
     asm volatile("\n\
     global_load_dwordx4 %0, %16, off \n \
     global_load_dwordx4 %4, %16, off offset:16*4*4 \n \
-
-    v_add_u32 %17, %16, 1024
-
+    \n \
+    v_add_u32 %17, %16, 1024 \n \
+    \n \
     global_load_dwordx4 %1, %17, off \n \
-    global_load_dwordx4 %5, %17, off \n \
-
-    v_add_u32 %17, %17, 1024
-
-    global_load_dwordx4 %2,
-    global_load_dwordx4 %6,
-
-    v_add_u32 %17, %17, 1024
-
-    global_load_dwordx4 %3,
-    global_load_dwordx4 %7,
-
-    v_add_u32 %17, %16, 65536
-
-    global_load_dwordx4 %8,
-    global_load_dwordx4 %12,
-
-    v_add_u32 %17, %17, 1024
-
-    global_load_dwordx4 %9,
-    global_load_dwordx4 %13,
-
-    v_add_u32 %17, %17, 1024
-
-    global_load_dwordx4 %10,
-    global_load_dwordx4 %14,
-
-    v_add_u32 %17, %17, 1024
-
-    global_load_dwordx4 %11,
-    global_load_dwordx4 %15,
+    global_load_dwordx4 %5, %17, off offset:16*4*4 \n \
+    \n \
+    v_add_u32 %17, %17, 1024 \n \
+    \n \
+    global_load_dwordx4 %2, %17, off \n \
+    global_load_dwordx4 %6, %17, off offset:16*4*4 \n \
+    \n \
+    v_add_u32 %17, %17, 1024 \n \
+    \n \
+    global_load_dwordx4 %3, %17, off \n \
+    global_load_dwordx4 %7, %17, off offset:16*4*4 \n \
+    \n \
+    v_add_u32 %17, %16, 65536 \n \
+    \n \
+    global_load_dwordx4 %8, %17, off \n \
+    global_load_dwordx4 %12, %17, off offset:16*4*4 \n \
+    \n \
+    v_add_u32 %17, %17, 1024 \n \
+    \n \
+    global_load_dwordx4 %9, %17, off \n \
+    global_load_dwordx4 %13, %17, off offset:16*4*4 \n \
+    \n \
+    v_add_u32 %17, %17, 1024 \n \
+    \n \
+    global_load_dwordx4 %10, %17, off \n \
+    global_load_dwordx4 %14, %17, off offset:16*4*4 \n \
+    \n \
+    v_add_u32 %17, %17, 1024 \n \
+    \n \
+    global_load_dwordx4 %11, %17, off \n \
+    global_load_dwordx4 %15, %17, off offset:16*4*4 \n \
     ":
-    "=v"(c[0]),"=v"(c[1]),"=v"(v[2]),"=v"(v[3]),
-    "=v"(c[4]),"=v"(c[5]),"=v"(v[6]),"=v"(v[7]),
-    "=v"(c[8]),"=v"(c[9]),"=v"(v[10]),"=v"(v[11]),
-    "=v"(c[12]),"=v"(c[13]),"=v"(v[14]),"=v"(v[15])
-    :"v"(C),"v"(cid),"v"(tmp));
-
+    "=v"(c[0]),"=v"(c[1]),"=v"(c[2]),"=v"(c[3]),
+    "=v"(c[4]),"=v"(c[5]),"=v"(c[6]),"=v"(c[7]),
+    "=v"(c[8]),"=v"(c[9]),"=v"(c[10]),"=v"(c[11]),
+    "=v"(c[12]),"=v"(c[13]),"=v"(c[14]),"=v"(c[15])
+    :"v"(C),"v"(cid0),"v"(tmp));
+*/
     vmcnt<0>();
-    shared_write_b128<0>(ra, ldsWriteA);
-    shared_write_b128<4096>(rb, ldsWriteA);
+    shared_write_b128_off<0>(ra, ldsWriteA);
+    shared_write_b128_off<4096>(rb, ldsWriteA);
     lgkmcnt<0>();
 
     asm volatile("\n \
@@ -299,8 +288,8 @@ for(int j=1;j<yDim/8;j++) {
 
     vmcnt<0>();
 
-    shared_write_b128<0>(ra, ldsWriteA);
-    shared_write_b128<4096>(rb, ldsWriteA);
+    shared_write_b128_off<0>(ra, ldsWriteA);
+    shared_write_b128_off<4096>(rb, ldsWriteA);
 
     lgkmcnt<2>();
 
@@ -463,25 +452,31 @@ outerProduct4x4(rA[2], rB[3], c[4], c[5], c[6], c[7]);
 outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
 outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
 
-    global_store<0>(C, c[0], cid0);
-    global_store<0>(C, c[1], cid1);
-    global_store<0>(C, c[2], cid2);
-    global_store<0>(C, c[3], cid3);
+    tmpC = C + cid0;
+    global_store<0>(tmpC, c[0]);
+    global_store<16>(tmpC, c[4]);
+    tmpC += 1024;
+    global_store<0>(tmpC, c[1]);
+    global_store<16>(tmpC, c[5]);
+    tmpC += 1024;
+    global_store<0>(tmpC, c[2]);
+    global_store<16>(tmpC, c[6]);
+    tmpC += 1024;
+    global_store<0>(tmpC, c[3]);
+    global_store<16>(tmpC, c[7]);
 
-    global_store<16>(C, c[4], cid0);
-    global_store<16>(C, c[5], cid1);
-    global_store<16>(C, c[6], cid2);
-    global_store<16>(C, c[7], cid3);
-
-    global_store<0>(C, c[8], cid8);
-    global_store<0>(C, c[9], cid9);
-    global_store<0>(C, c[10], cid10);
-    global_store<0>(C, c[11], cid11);
-
-    global_store<16>(C, c[12], cid8);
-    global_store<16>(C, c[13], cid9);
-    global_store<16>(C, c[14], cid10);
-    global_store<16>(C, c[15], cid11);
+    tmpC = C + 64*1024;
+    global_store<0>(tmpC, c[8]);
+    global_store<16>(tmpC, c[12]);
+    tmpC += 1024;
+    global_store<0>(tmpC, c[9]);
+    global_store<16>(tmpC, c[13]);
+    tmpC += 1024;
+    global_store<0>(tmpC, c[10]);
+    global_store<16>(tmpC, c[14]);
+    tmpC += 1024;
+    global_store<0>(tmpC, c[11]);
+    global_store<16>(tmpC, c[15]);
 
     vmcnt<0>();
 }
