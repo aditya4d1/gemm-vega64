@@ -48,3 +48,7 @@ inline __device__ void outerProduct4x4(Float4 &a, Float4 &b, Float4 &c0, Float4 
       "v"(a.w),"v"(b.x),"v"(b.y),"v"(b.z),"v"(b.w)
   );
 }
+
+inline __device__ void outerProduct4x4(Half8 &a, Half8 &b, Half8 &c0, Half8 &c1, Half8 &c2, Half8 &c3) {
+
+}

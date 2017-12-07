@@ -9,6 +9,16 @@
 * + Double Buffering!
 */
 
+/**
+* Notes:
+* 1. You can only load 4 halfs from A and 8 halfs from B.
+* The final outer product will have 32 halfs which can
+* be stored in 16 registers.
+* 2. Which means you have do ds_read_b64 or prefetch
+* using ds_read2_b64 with offsets. Which means you get two
+* prefetching layers.
+*/
+
 #include <iostream>
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
