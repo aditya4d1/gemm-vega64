@@ -18,24 +18,26 @@
 #include "dims.h"
 #include <fstream>
 
-constexpr uint32_t xDim = 4096;
-constexpr uint32_t yDim = 4096;
-constexpr uint32_t xDim4 = xDim/4;
+constexpr uint32_t xDim = 8192;
+constexpr uint32_t yDim = 8192;
 constexpr uint32_t xDim8 = xDim/8;
+constexpr uint32_t xDim16 = xDim/16;
 constexpr uint32_t x32 = 32;
 constexpr uint32_t x16 = 16;
-constexpr size_t Size = xDim * yDim * sizeof(float);
+constexpr size_t Size = xDim * yDim * sizeof(__fp16);
 
-__global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *getGlobalCId) {
+// A is N, B is T
+
+__global__ void SGEMM(Half8 *A, Half8 *B, Half8 *C, int *getGlobalAId, int *getGlobalCId) {
     int tx = hipThreadIdx_x;
     int ty = hipThreadIdx_y;
     int bx = hipBlockIdx_x;
     int by = hipBlockIdx_y;
 
-    Float4 rA[4], rB[4];
-    Float4 c[16];
+    Half8 rA[4], rB[4];
+    Half8 c[16];
 
-    Float4 ra, rb;
+    Half8 ra, rb;
 
     uint32_t redA = 0;
     uint32_t redB = 4096;
@@ -484,31 +486,31 @@ outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
 
 int main() {
     hipSetDevice(1);
-    std::vector<Float4> a(xDim4*yDim), b(xDim4*yDim), c(xDim*xDim4);
-    std::fill(c.begin(), c.end(), 0.0f);
-    float *_a = reinterpret_cast<float*>(a.data());
-    float *_b = reinterpret_cast<float*>(b.data());
-    float *_c = reinterpret_cast<float*>(c.data());
+    std::vector<Half8> a(xDim8*yDim), b(xDim8*yDim), c(xDim*xDim8);
+    __fp16 *_a = reinterpret_cast<__fp16*>(a.data());
+    __fp16 *_b = reinterpret_cast<__fp16*>(b.data());
+    __fp16 *_c = reinterpret_cast<__fp16*>(c.data());
 
     for(int j=0;j<yDim;j++) {
         for(int i=0;i<xDim;i++) {
-            _a[i + j * xDim] = (j+i*xDim)*1.0f + 1.0f;
+            _a[i + j * xDim] = __fp16((j+i*xDim)*1.0f + 1.0f);
             if(i == j) {
-            _b[i + j * xDim] = 1.0f;
+            _b[i + j * xDim] = __fp16(1.0f);
             } else {
-            _b[i + j * xDim] = 0.0f;
+            _b[i + j * xDim] = __fp16(0.0f);
             }
+            _c[i + j * xDim] = __fp16(0.0f);
         }
     }
 
-    Float4 *Ad, *Bd, *Cd;
+    Half8 *Ad, *Bd, *Cd;
     int *buffA, *buffB;
     hipHostMalloc(&buffA, 16*16*sizeof(int));
     hipHostMalloc(&buffB, 16*16*sizeof(int));
-    hipMalloc(&Ad, a.size()*sizeof(Float4));
-    hipMalloc(&Bd, b.size()*sizeof(Float4));
-    hipMalloc(&Cd, c.size()*sizeof(Float4));
-    hipMemcpy(Ad, a.data(), a.size()*sizeof(Float4), hipMemcpyHostToDevice);
+    hipMalloc(&Ad, a.size()*sizeof(Half8));
+    hipMalloc(&Bd, b.size()*sizeof(Half8));
+    hipMalloc(&Cd, c.size()*sizeof(Half8));
+    hipMemcpy(Ad, a.data(), a.size()*sizeof(Half8), hipMemcpyHostToDevice);
     hipMemcpy(Bd, b.data(), b.size()*sizeof(Float4), hipMemcpyHostToDevice);
     hipMemcpy(Cd, c.data(), c.size()*sizeof(Float4), hipMemcpyHostToDevice);
     auto start = std::chrono::high_resolution_clock::now();
