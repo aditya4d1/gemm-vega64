@@ -23,6 +23,64 @@ inline __device__ void global_load(Float4* ptr, Float4 &val) {
 }
 
 template<uint32_t offset>
+inline __device__ void global_load(Float4* ptr, Float4 &val, uint32_t off) {
+    if(offset == 0*32) {
+    asm volatile("\n \
+    global_load_dwordx4 %0, %1, off \n \
+    "
+    :"=v"(val)
+    :"v"(ptr + off));
+    return;
+    }
+    if(offset == 16) {
+    asm volatile("\n \
+    global_load_dwordx4 %0, %1, off offset:16*4*4 \n \
+    "
+    :"=v"(val)
+    :"v"(ptr + off));
+    }
+}
+
+template<uint32_t offset>
+inline __device__ void global_load(Half4* ptr, Half4 &val) {
+    if(offset == 0*32) {
+    asm volatile("\n \
+    global_load_dwordx2 %0, %1, off \n \
+    "
+    :"=v"(val)
+    :"v"(ptr));
+    return;
+    }
+    if(offset == 16) {
+    asm volatile("\n \
+    global_load_dwordx2 %0, %1, off offset:16*4*4 \n \
+    "
+    :"=v"(val)
+    :"v"(ptr));
+    }
+}
+
+template<uint32_t offset>
+inline __device__ void global_load(Half4* ptr, Half4 &val, uint32_t off) {
+    if(offset == 0*32) {
+    asm volatile("\n \
+    global_load_dwordx2 %0, %1, off \n \
+    "
+    :"=v"(val)
+    :"v"(ptr + off));
+    return;
+    }
+    if(offset == 16) {
+    asm volatile("\n \
+    global_load_dwordx2 %0, %1, off offset:16*4*4 \n \
+    "
+    :"=v"(val)
+    :"v"(ptr + off));
+    }
+}
+
+
+template<uint32_t offset>
 inline __device__ void global_store(Float4* ptr, Float4 &val) {
     if(offset == 0*32) {
     asm volatile("\n \
@@ -41,157 +99,63 @@ inline __device__ void global_store(Float4* ptr, Float4 &val) {
     }
 }
 
-
 template<uint32_t offset>
-inline __device__ void global_load(Float4* &ptr, Float4 &val, uint32_t off) {
+inline __device__ void global_store(Float4* ptr, Float4 &val, uint32_t off) {
     if(offset == 0*32) {
-        asm volatile("\n \
-        global_load_dwordx4 %0, %1, off \n \
-        "
-        :"=v"(val)
-        :"v"(ptr + off));
-        return;
-    }
-    if(offset == 16+0*32) {
-        asm volatile("\n \
-        global_load_dwordx4 %0, %1, off offset:16*4*4 \n \
-        "
-        :"=v"(val)
-        :"v"(ptr + off));
-        return;
-    }
-    if(offset == 0+1*32) {
-        asm volatile("\n \
-        global_load_dwordx4 %0, %1, off offset:32*4*4 \n \
-        "
-        :"=v"(val)
-        :"v"(ptr + off));
-        return;
-    }
-    if(offset == 16+1*32) {
-        asm volatile("\n \
-        global_load_dwordx4 %0, %1, off offset:48*4*4 \n \
-        "
-        :"=v"(val)
-        :"v"(ptr + off));
-        return;
-    }
-    if(offset == 0+2*32) {
-        asm volatile("\n \
-        global_load_dwordx4 %0, %1, off offset:64*4*4 \n \
-        "
-        :"=v"(val)
-        :"v"(ptr + off));
-        return;
-    }
-    if(offset == 16+2*32) {
-        asm volatile("\n \
-        global_load_dwordx4 %0, %1, off offset:80*4*4 \n \
-        "
-        :"=v"(val)
-        :"v"(ptr + off));
-        return;
-    }
-    if(offset == 0+3*32) {
-        asm volatile("\n \
-        global_load_dwordx4 %0, %1, off offset:96*4*4 \n \
-        "
-        :"=v"(val)
-        :"v"(ptr + off));
-        return;
-    }
-    if(offset == 16+3*32) {
-        asm volatile("\n \
-        global_load_dwordx4 %0, %1, off offset:112*4*4 \n \
-        "
-        :"=v"(val)
-        :"v"(ptr + off));
-        return;
-    }
-
-    asm volatile("\n \
-    global_load_dwordx4 %0, %1, off \n \
-    "
-    :"=v"(val)
-    :"v"(ptr + off));
-}
-
-
-template<uint32_t offset>
-inline __device__ void global_store(Float4* &ptr, Float4 &val, uint32_t off) {
-    if(offset == 0) {
-        asm volatile("\n \
-        global_store_dwordx4 %1, %0, off \n \
-        "
-        :
-        :"v"(val), "v"(ptr + off));
-        return;
-    }
-    if(offset == 16) {
-        asm volatile("\n \
-        global_store_dwordx4 %1, %0, off offset:16*4*4 \n \
-        "
-        :
-        :"v"(val), "v"(ptr + off));
-        return;
-    }
-    if(offset == 32) {
-        asm volatile("\n \
-        global_store_dwordx4 %1, %0, off offset:32*4*4 \n \
-        "
-        :
-        :"v"(val), "v"(ptr + off));
-        return;
-    }
-    if(offset == 48) {
-        asm volatile("\n \
-        global_store_dwordx4 %1, %0, off offset:48*4*4 \n \
-        "
-        :
-        :"v"(val), "v"(ptr + off));
-        return;
-    }
-    if(offset == 64) {
-        asm volatile("\n \
-        global_store_dwordx4 %1, %0, off offset:64*4*4 \n \
-        "
-        :
-        :"v"(val), "v"(ptr + off));
-        return;
-    }
-    if(offset == 80) {
-        asm volatile("\n \
-        global_store_dwordx4 %1, %0, off offset:80*4*4 \n \
-        "
-        :
-        :"v"(val), "v"(ptr + off));
-        return;
-    }
-    if(offset == 96) {
-        asm volatile("\n \
-        global_store_dwordx4 %1, %0, off offset:96*4*4 \n \
-        "
-        :
-        :"v"(val), "v"(ptr + off));
-        return;
-    }
-    if(offset == 112) {
-        asm volatile("\n \
-        global_store_dwordx4 %1, %0, off offset:112*4*4 \n \
-        "
-        :
-        :"v"(val), "v"(ptr + off));
-        return;
-    }
-
-
     asm volatile("\n \
     global_store_dwordx4 %1, %0, off \n \
     "
     :
     :"v"(val), "v"(ptr + off));
+    return;
+    }
+    if(offset == 16) {
+    asm volatile("\n \
+    global_store_dwordx4 %1, %0, off offset:16*4*4 \n \
+    "
+    :
+    :"v"(val), "v"(ptr + off));
+    }
 }
 
+
+template<uint32_t offset>
+inline __device__ void global_store(Half4* ptr, Half4 &val) {
+    if(offset == 0*32) {
+    asm volatile("\n \
+    global_store_dwordx2 %1, %0, off \n \
+    "
+    :
+    :"v"(val), "v"(ptr));
+    return;
+    }
+    if(offset == 16) {
+    asm volatile("\n \
+    global_store_dwordx2 %1, %0, off offset:16*4*4 \n \
+    "
+    :
+    :"v"(val), "v"(ptr));
+    }
+}
+
+template<uint32_t offset>
+inline __device__ void global_store(Half4* ptr, Half4 &val, uint32_t off) {
+    if(offset == 0*32) {
+    asm volatile("\n \
+    global_store_dwordx2 %1, %0, off \n \
+    "
+    :
+    :"v"(val), "v"(ptr + off));
+    return;
+    }
+    if(offset == 16) {
+    asm volatile("\n \
+    global_store_dwordx2 %1, %0, off offset:16*4*4 \n \
+    "
+    :
+    :"v"(val), "v"(ptr + off));
+    }
+}
 
 
 template<uint32_t cnt>

@@ -76,33 +76,25 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     global_load<0>(tmpC, c[3]);
     global_load<16>(tmpC, c[7]);
 
-    tmpC = C + 64*1024;
-    global_load<0>(tmpC, c[8], cid1);
-    global_load<16>(tmpC, c[12], cid1);
+    tmpC = C + 64*1024 + cid0;
+    global_load<0>(tmpC, c[8]);
+    global_load<16>(tmpC, c[12]);
     tmpC += 1024;
-    global_load<0>(tmpC, c[9], cid1);
-    global_load<16>(tmpC, c[13], cid1);
+    global_load<0>(tmpC, c[9]);
+    global_load<16>(tmpC, c[13]);
     tmpC += 1024;
-    global_load<0>(tmpC, c[10], cid1);
-    global_load<16>(tmpC, c[14], cid1);
+    global_load<0>(tmpC, c[10]);
+    global_load<16>(tmpC, c[14]);
     tmpC += 1024;
-    global_load<0>(tmpC, c[11], cid1);
-    global_load<16>(tmpC, c[15], cid1);
+    global_load<0>(tmpC, c[11]);
+    global_load<16>(tmpC, c[15]);
 
     vmcnt<0>();
     shared_write_b128_off<0>(ra, ldsWriteA);
     shared_write_b128_off<4096>(rb, ldsWriteA);
     lgkmcnt<0>();
 
-    asm volatile("\n \
-    ds_read_b128 %0, %4 offset:0      \n \
-    ds_read_b128 %1, %4 offset:256   \n \
-    ds_read_b128 %2, %5 offset:0      \n \
-    ds_read_b128 %3, %5 offset:256   \n \
-    "
-    :"=v"(rA[0]),"=v"(rA[1]), "=v"(rB[0]), "=v"(rB[1])
-    :"v"(ldsReadA),"v"(ldsReadB)
-    );
+    shared_read_b128<0>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
 
     for(int j=1;j<yDim/8;j++) {
 
@@ -111,16 +103,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
         a_global_id += 8 * 1024;
         b_global_id += 8 * 1024;
 
-        asm volatile("\n \
-    ds_read_b128 %0, %4 offset:1*512      \n \
-    ds_read_b128 %1, %4 offset:1*512+256  \n \
-    ds_read_b128 %2, %5 offset:1*512      \n \
-    ds_read_b128 %3, %5 offset:1*512+256  \n \
-    "
-        :"=v"(rA[2]),"=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
-        :"v"(ldsReadA), "v"(ldsReadB)
-        );
-
+        shared_read_b128<512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
         lgkmcnt<4>();
 
         // i = 0
@@ -129,16 +112,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
         outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
         outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
 
-        asm volatile("\n \
-    ds_read_b128 %0, %4 offset:2*512 \n \
-    ds_read_b128 %1, %4 offset:2*512+256 \n \
-    ds_read_b128 %2, %5 offset:2*512 \n \
-    ds_read_b128 %3, %5 offset:2*512+256 \n \
-    "
-        :"=v"(rA[0]),"=v"(rA[1]), "=v"(rB[0]), "=v"(rB[1])
-        :"v"(ldsReadA), "v"(ldsReadB)
-        );
-
+        shared_read_b128<2*512>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
         lgkmcnt<4>();
 
         // i = 1
@@ -147,16 +121,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
         outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
         outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
 
-        asm volatile("\n \
-    ds_read_b128 %0, %4 offset:3*512      \n \
-    ds_read_b128 %1, %4 offset:3*512+256  \n \
-    ds_read_b128 %2, %5 offset:3*512      \n \
-    ds_read_b128 %3, %5 offset:3*512+256  \n \
-    "
-        :"=v"(rA[2]),"=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
-        :"v"(ldsReadA), "v"(ldsReadB)
-        );
-
+        shared_read_b128<3*512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
         lgkmcnt<4>();
 
     // i = 2
@@ -165,16 +130,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
         outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
         outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
 
-        asm volatile("\n \
-    ds_read_b128 %0, %4 offset:4*512 \n \
-    ds_read_b128 %1, %4 offset:4*512+256 \n \
-    ds_read_b128 %2, %5 offset:4*512 \n \
-    ds_read_b128 %3, %5 offset:4*512+256 \n \
-    "
-        :"=v"(rA[0]),"=v"(rA[1]), "=v"(rB[0]), "=v"(rB[1])
-        :"v"(ldsReadA), "v"(ldsReadB)
-        );
-
+        shared_read_b128<4*512>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
         lgkmcnt<4>();
 
     // i = 3
@@ -183,16 +139,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
         outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
         outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
 
-        asm volatile("\n \
-    ds_read_b128 %0, %4 offset:5*512      \n \
-    ds_read_b128 %1, %4 offset:5*512+256  \n \
-    ds_read_b128 %2, %5 offset:5*512      \n \
-    ds_read_b128 %3, %5 offset:5*512+256  \n \
-    "
-        :"=v"(rA[2]),"=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
-        :"v"(ldsReadA), "v"(ldsReadB)
-        );
-
+        shared_read_b128<5*512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
         lgkmcnt<4>();
 
     // i = 4
@@ -201,16 +148,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
         outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
         outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
 
-        asm volatile("\n \
-    ds_read_b128 %0, %4 offset:6*512 \n \
-    ds_read_b128 %1, %4 offset:6*512+256 \n \
-    ds_read_b128 %2, %5 offset:6*512 \n \
-    ds_read_b128 %3, %5 offset:6*512+256 \n \
-    "
-        :"=v"(rA[0]),"=v"(rA[1]), "=v"(rB[0]), "=v"(rB[1])
-        :"v"(ldsReadA), "v"(ldsReadB)
-        );
-
+        shared_read_b128<6*512>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
         lgkmcnt<4>();
 
     // i = 5
@@ -219,16 +157,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
         outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
         outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
 
-        asm volatile("\n \
-    ds_read_b128 %0, %4 offset:7*512 \n \
-    ds_read_b128 %1, %4 offset:7*512+256 \n \
-    ds_read_b128 %2, %5 offset:7*512 \n \
-    ds_read_b128 %3, %5 offset:7*512+256 \n \
-    "
-        :"=v"(rA[2]),"=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
-        :"v"(ldsReadA), "v"(ldsReadB)
-        );
-
+        shared_read_b128<7*512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
         redA = redA ^ 0x2000;
         redB = redB ^ 0x2000;
 
@@ -253,16 +182,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
         lgkmcnt<0>();
         __syncthreads();
 
-        asm volatile("\n \
-    ds_read_b128 %0, %4 offset:0      \n \
-    ds_read_b128 %1, %4 offset:256   \n \
-    ds_read_b128 %2, %5 offset:0      \n \
-    ds_read_b128 %3, %5 offset:256   \n \
-    "
-        :"=v"(rA[0]),"=v"(rA[1]), "=v"(rB[0]), "=v"(rB[1])
-        :"v"(ldsReadA), "v"(ldsReadB)
-        );
-
+        shared_read_b128<0>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
     // i = 7
         outerProduct4x4(rA[2], rB[2], c[0], c[1], c[2], c[3]);
         outerProduct4x4(rA[2], rB[3], c[4], c[5], c[6], c[7]);
@@ -271,14 +191,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     }
 
 
-    asm volatile("ds_read_b128 %0, %4 offset:1*512      \n \
-    ds_read_b128 %1, %4 offset:1*512+256  \n \
-    ds_read_b128 %2, %5 offset:1*512      \n \
-    ds_read_b128 %3, %5 offset:1*512+256"
-    :"=v"(rA[2]),"=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
-    :"v"(ldsReadA), "v"(ldsReadB)
-    );
-
+    shared_read_b128<512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
     lgkmcnt<4>();
 
     // i = 0
@@ -287,16 +200,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
     outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
 
-    asm volatile("\n \
-    ds_read_b128 %0, %4 offset:2*512 \n \
-    ds_read_b128 %1, %4 offset:2*512+256 \n \
-    ds_read_b128 %2, %5 offset:2*512 \n \
-    ds_read_b128 %3, %5 offset:2*512+256 \n \
-    "
-    :"=v"(rA[0]),"=v"(rA[1]), "=v"(rB[0]), "=v"(rB[1])
-    :"v"(ldsReadA), "v"(ldsReadB)
-    );
-
+    shared_read_b128<2*512>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
     lgkmcnt<4>();
 
     // i = 1
@@ -305,16 +209,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
     outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
 
-    asm volatile("\n \
-    ds_read_b128 %0, %4 offset:3*512      \n \
-    ds_read_b128 %1, %4 offset:3*512+256  \n \
-    ds_read_b128 %2, %5 offset:3*512      \n \
-    ds_read_b128 %3, %5 offset:3*512+256  \n \
-    "
-    :"=v"(rA[2]),"=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
-    :"v"(ldsReadA), "v"(ldsReadB)
-    );
-
+    shared_read_b128<3*512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
     lgkmcnt<4>();
 
     // i = 2
@@ -323,16 +218,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
     outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
 
-    asm volatile("\n \
-    ds_read_b128 %0, %4 offset:4*512 \n \
-    ds_read_b128 %1, %4 offset:4*512+256 \n \
-    ds_read_b128 %2, %5 offset:4*512 \n \
-    ds_read_b128 %3, %5 offset:4*512+256 \n \
-    "
-    :"=v"(rA[0]),"=v"(rA[1]), "=v"(rB[0]), "=v"(rB[1])
-    :"v"(ldsReadA), "v"(ldsReadB)
-    );
-
+    shared_read_b128<4*512>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
     lgkmcnt<4>();
 
     // i = 3
@@ -341,16 +227,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
     outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
 
-    asm volatile("\n \
-    ds_read_b128 %0, %4 offset:5*512      \n \
-    ds_read_b128 %1, %4 offset:5*512+256  \n \
-    ds_read_b128 %2, %5 offset:5*512      \n \
-    ds_read_b128 %3, %5 offset:5*512+256  \n \
-    "
-    :"=v"(rA[2]),"=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
-    :"v"(ldsReadA), "v"(ldsReadB)
-    );
-
+    shared_read_b128<5*512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
     lgkmcnt<4>();
 
     // i = 4
@@ -359,16 +236,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
     outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
 
-    asm volatile("\n \
-    ds_read_b128 %0, %4 offset:6*512 \n \
-    ds_read_b128 %1, %4 offset:6*512+256 \n \
-    ds_read_b128 %2, %5 offset:6*512 \n \
-    ds_read_b128 %3, %5 offset:6*512+256 \n \
-    "
-    :"=v"(rA[0]),"=v"(rA[1]), "=v"(rB[0]), "=v"(rB[1])
-    :"v"(ldsReadA), "v"(ldsReadB)
-    );
-
+    shared_read_b128<6*512>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
     lgkmcnt<4>();
 
     // i = 5
@@ -377,15 +245,9 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
     outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
 
-    asm volatile("\n \
-    ds_read_b128 %0, %4 offset:7*512 \n \
-    ds_read_b128 %1, %4 offset:7*512+256 \n \
-    ds_read_b128 %2, %5 offset:7*512 \n \
-    ds_read_b128 %3, %5 offset:7*512+256 \n \
-    "
-    :"=v"(rA[2]),"=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
-    :"v"(ldsReadA), "v"(ldsReadB)
-    );
+
+    shared_read_b128<7*512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
+
     lgkmcnt<4>();
     // i = 6
     outerProduct4x4(rA[0], rB[0], c[0], c[1], c[2], c[3]);
