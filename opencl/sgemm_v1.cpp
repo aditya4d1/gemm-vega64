@@ -19,7 +19,7 @@ int main() {
     stinger::fill(C, T(1));
 
     Init();
-    BuildProgram(LoadKernel("./inc/vadd.cl"), context);
+    BuildProgram(LoadKernel("./inc/out_v1.cl"), context);
     kernel = clCreateKernel(program, "Main", &error);
     CL_CHECK(error);
 
