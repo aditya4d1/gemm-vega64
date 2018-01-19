@@ -255,7 +255,7 @@ __global__ void SGEMM(Float4 *A, Float4 *B, Float4 *C, int *getGlobalAId, int *g
     outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
     outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
 
-    lgkmcnt<4>();
+    lgkmcnt<0>();
 
     // i = 5
     outerProduct4x4(rA[2], rB[2], c[0], c[1], c[2], c[3]);

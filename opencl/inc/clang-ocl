@@ -30,7 +30,7 @@ do
     shift
 done
 
-NAME=vadd
+NAME=out_v3
  
 ${CLANG} -c -emit-llvm \
 -target amdgcn-amd-amdhsa-opencl -x cl \

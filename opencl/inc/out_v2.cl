@@ -15,6 +15,20 @@ __kernel void Main(__global float4 *A, __global float4 *B, __global float4 *C) {
 
     vmcnt0();
 
+    __local float4 s[2];
+
+    __asm(
+    "ds_write_b128 %0, %1\n"
+    :
+    :"v"(s),"v"(a)
+    );
+
+    __asm(
+    "ds_write_b128 %0, %1\n"
+    :
+    :"v"(s+1),"v"(b)
+    );
+
     op_4x4f(&a, &b, &c[0], &c[1], &c[2], &c[3]);
 
     global_store_off0_f32x4(C + 4 * lid + 0, &c[0]);
