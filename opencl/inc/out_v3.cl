@@ -127,40 +127,95 @@ __kernel void Main(__global float4 *A, __global float4 *B, __global float4 *C) {
     op_4x4f(&rA[3], &rB[2], &c[8], &c[9], &c[10], &c[11]);
     op_4x4f(&rA[3], &rB[3], &c[12], &c[13], &c[14], &c[15]);
 
-    shared_read_b128_1536(ldsReadA, ldsReadB, &rA[2], &rA[3], &rB[0], &rB[1]);
-    lgkmcnt4();
+//    shared_read_b128_1536(ldsReadA, ldsReadB, &rA[2], &rA[3], &rB[0], &rB[1]);
+//    lgkmcnt4();
+
+    __asm(
+    "ds_read_b128 %0, %4 offset:1536+0\n"
+    "ds_read_b128 %1, %4 offset:1536+256\n"
+    "ds_read_b128 %2, %5 offset:1536+0\n"
+    "ds_read_b128 %3, %5 offset:1536+256\n"
+    "s_waitcnt lgkmcnt(4)\n"
+    :"=v"(rA[2]), "=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
+    :"v"(ldsReadA), "v"(ldsReadB)
+    );
 
     op_4x4f(&rA[0], &rB[0], &c[0], &c[1], &c[2], &c[3]);
     op_4x4f(&rA[0], &rB[1], &c[4], &c[5], &c[6], &c[7]);
     op_4x4f(&rA[1], &rB[0], &c[8], &c[9], &c[10], &c[11]);
     op_4x4f(&rA[1], &rB[1], &c[12], &c[13], &c[14], &c[15]);
 
-    shared_read_b128_2048(ldsReadA, ldsReadB, &rA[0], &rA[1], &rB[0], &rB[1]);
-    lgkmcnt4();
+//    shared_read_b128_2048(ldsReadA, ldsReadB, &rA[0], &rA[1], &rB[0], &rB[1]);
+//    lgkmcnt4();
+
+
+    __asm(
+    "ds_read_b128 %0, %4 offset:2048+0\n"
+    "ds_read_b128 %1, %4 offset:2048+256\n"
+    "ds_read_b128 %2, %5 offset:2048+0\n"
+    "ds_read_b128 %3, %5 offset:2048+256\n"
+    "s_waitcnt lgkmcnt(4)\n"
+    :"=v"(rA[0]),"=v"(rA[1]),"=v"(rB[0]),"=v"(rB[1])
+    :"v"(ldsReadA),"v"(ldsReadB)
+    );
 
     op_4x4f(&rA[2], &rB[2], &c[0], &c[1], &c[2], &c[3]);
     op_4x4f(&rA[2], &rB[3], &c[4], &c[5], &c[6], &c[7]);
     op_4x4f(&rA[3], &rB[2], &c[8], &c[9], &c[10], &c[11]);
     op_4x4f(&rA[3], &rB[3], &c[12], &c[13], &c[14], &c[15]);
 
-    shared_read_b128_2560(ldsReadA, ldsReadB, &rA[2], &rA[3], &rB[0], &rB[1]);
-    lgkmcnt4();
+//    shared_read_b128_2560(ldsReadA, ldsReadB, &rA[2], &rA[3], &rB[0], &rB[1]);
+//    lgkmcnt4();
+
+
+    __asm(
+    "ds_read_b128 %0, %4 offset:2560+0\n"
+    "ds_read_b128 %1, %4 offset:2560+256\n"
+    "ds_read_b128 %2, %5 offset:2560+0\n"
+    "ds_read_b128 %3, %5 offset:2560+256\n"
+    "s_waitcnt lgkmcnt(4)\n"
+    :"=v"(rA[2]), "=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
+    :"v"(ldsReadA), "v"(ldsReadB)
+    );
+
 
     op_4x4f(&rA[0], &rB[0], &c[0], &c[1], &c[2], &c[3]);
     op_4x4f(&rA[0], &rB[1], &c[4], &c[5], &c[6], &c[7]);
     op_4x4f(&rA[1], &rB[0], &c[8], &c[9], &c[10], &c[11]);
     op_4x4f(&rA[1], &rB[1], &c[12], &c[13], &c[14], &c[15]);
 
-    shared_read_b128_3072(ldsReadA, ldsReadB, &rA[0], &rA[1], &rB[0], &rB[1]);
-    lgkmcnt4();
+//    shared_read_b128_3072(ldsReadA, ldsReadB, &rA[0], &rA[1], &rB[0], &rB[1]);
+//    lgkmcnt4();
+
+    __asm(
+    "ds_read_b128 %0, %4 offset:3072+0\n"
+    "ds_read_b128 %1, %4 offset:3072+256\n"
+    "ds_read_b128 %2, %5 offset:3072+0\n"
+    "ds_read_b128 %3, %5 offset:3072+256\n"
+    "s_waitcnt lgkmcnt(4)\n"
+    :"=v"(rA[0]),"=v"(rA[1]),"=v"(rB[0]),"=v"(rB[1])
+    :"v"(ldsReadA),"v"(ldsReadB)
+    );
+
 
     op_4x4f(&rA[2], &rB[2], &c[0], &c[1], &c[2], &c[3]);
     op_4x4f(&rA[2], &rB[3], &c[4], &c[5], &c[6], &c[7]);
     op_4x4f(&rA[3], &rB[2], &c[8], &c[9], &c[10], &c[11]);
     op_4x4f(&rA[3], &rB[3], &c[12], &c[13], &c[14], &c[15]);
 
-    shared_read_b128_3584(ldsReadA, ldsReadB, &rA[2], &rA[3], &rB[0], &rB[1]);
-    lgkmcnt4();
+//    shared_read_b128_3584(ldsReadA, ldsReadB, &rA[2], &rA[3], &rB[0], &rB[1]);
+//    lgkmcnt4();
+
+    __asm(
+    "ds_read_b128 %0, %4 offset:3584+0\n"
+    "ds_read_b128 %1, %4 offset:3584+256\n"
+    "ds_read_b128 %2, %5 offset:3584+0\n"
+    "ds_read_b128 %3, %5 offset:3584+256\n"
+    "s_waitcnt lgkmcnt(4)\n"
+    :"=v"(rA[2]), "=v"(rA[3]), "=v"(rB[2]), "=v"(rB[3])
+    :"v"(ldsReadA), "v"(ldsReadB)
+    );
+
 
     op_4x4f(&rA[0], &rB[0], &c[0], &c[1], &c[2], &c[3]);
     op_4x4f(&rA[0], &rB[1], &c[4], &c[5], &c[6], &c[7]);
