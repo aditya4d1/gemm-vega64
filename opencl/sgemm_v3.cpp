@@ -14,7 +14,7 @@ int main() {
     stinger::Tensor<T> B(width, 1);
     stinger::Tensor<T> C(width, 1);
 
-    stinger::fill(A, T(1));
+    stinger::fill(A, T(2));
     stinger::fill(B, T(3));
     stinger::fill(C, T(1));
 
@@ -38,7 +38,7 @@ int main() {
     CL_CHECK(error);
 
     size_t offset[3] = { 0 };
-    size_t global_work_size[3] = {16, 16, 1};
+    size_t global_work_size[3] = {16*32, 16*32, 1};
     size_t local_work_size[3] = {16, 16, 1};
 
     error = clEnqueueNDRangeKernel(queue, kernel, 2, offset, global_work_size, local_work_size, 0, NULL, NULL);
@@ -56,7 +56,7 @@ int main() {
     outfile.open("outfile.txt");
 
     std::cout<<"Writing to file"<<std::endl;
-    for(int i=0;i<4;i++) {
+    for(int i=0;i<4096;i++) {
         for(int j=0;j<4096;j++) {
             outfile<<C[j+i*4096]<<" ";
         }
