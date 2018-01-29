@@ -14,7 +14,7 @@ int main() {
     stinger::Tensor<T> B(width, 1);
     stinger::Tensor<T> C(width, 1);
 
-    stinger::fill(A, T(0));
+    stinger::fill(A, T(1));
     stinger::fill(B, T(3));
     stinger::fill(C, T(1));
 
@@ -51,5 +51,17 @@ int main() {
     std::cout<<C[4]<<" "<<C[5]<<" "<<C[6]<<" "<<C[7]<<std::endl;
     std::cout<<C[8]<<" "<<C[9]<<" "<<C[10]<<" "<<C[11]<<std::endl;
     std::cout<<C[12]<<" "<<C[13]<<" "<<C[14]<<" "<<C[15]<<std::endl;
+
+    std::ofstream outfile;
+    outfile.open("outfile.txt");
+
+    std::cout<<"Writing to file"<<std::endl;
+    for(int i=0;i<4;i++) {
+        for(int j=0;j<4096;j++) {
+            outfile<<C[j+i*4096]<<" ";
+        }
+        outfile<<"\n";
+    }
+    outfile.close();
 
 }
