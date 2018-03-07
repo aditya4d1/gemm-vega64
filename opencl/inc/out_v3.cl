@@ -32,8 +32,40 @@ __kernel void Main(__global float4 *A, __global float4 *B, __global float4 *C) {
     __local float4 *ldsWriteA = lds + id;
     __local float4 *ldsWriteB = lds + id;
 
-    global_load_off0_f32x4(A + a_global_id, &ra);
-    global_load_off0_f32x4(B + b_global_id, &rb);
+//    global_load_off0_f32x4(A + a_global_id, &ra);
+//    global_load_off0_f32x4(B + b_global_id, &rb);
+
+    __asm volatile(
+    "global_load_dwordx4 %0, %2, off\n"
+    "global_load_dwordx4 %1, %3, off\n"
+    "s_waitcnt vmcnt(0)\n"
+    :"=v"(ra),"=v"(rb)
+    :"v"(A + a_global_id), "v"(B + b_global_id)
+    );
+
+    __asm volatile(
+    "ds_write_b128 %0, %2 offset:0 \n"
+    "ds_write_b128 %1, %3 offset:4096 \n"
+    "s_waitcnt lgkmcnt(0)\n"
+    :
+    :"v"(ldsWriteA), "v"(ldsWriteB), "v"(ra), "v"(rb)
+    );
+
+    __asm volatile(
+    "ds_read_b128 %0, %8 offset:0\n"
+    "ds_read_b128 %1, %8 offset:256\n"
+    "ds_read_b128 %2, %9 offset:0\n"
+    "ds_read_b128 %3, %9 offset:256\n"
+
+    "ds_read_b128 %4, %8 offset:512\n"
+    "ds_read_b128 %5, %8 offset:512+256\n"
+    "ds_read_b128 %6, %9 offset:512\n"
+    "ds_read_b128 %7, %9 offset:512+256\n"
+    "s_waitcnt lgkmcnt(0)\n"
+    :"=v"(rA[0]),"=v"(rA[1]),"=v"(rA[2]),"=v"(rA[3]),
+    "=v"(rB[0]),"=v"(rB[1]),"=v"(rB[2]),"=v"(rB[3])
+    :"v"(ldsReadA),"v"(ldsReadB)
+    );
 
     __global float4 *tmpC = C + cid0;
     global_load_off0_f32x4(tmpC, &c[0]);
@@ -58,104 +90,99 @@ __kernel void Main(__global float4 *A, __global float4 *B, __global float4 *C) {
     global_load_off0_f32x4(tmpC, &c[10]);
     global_load_off16_f32x4(tmpC, &c[14]);
     tmpC += 1024;
-    global_load_off0_f32x4(tmpC, &c[11]);
-    global_load_off16_f32x4(tmpC, &c[15]);
+//    global_load_off0_f32x4(tmpC, &c[11]);
+//    global_load_off16_f32x4(tmpC, &c[15]);
 
-    vmcnt0();
+    __asm volatile(
+    "global_load_dwordx4 %0, %2, off \n"
+    "global_load_dwordx4 %1, %2, off offset:16*4*4\n"
+    "s_waitcnt vmcnt(0)\n"
+    :"=v"(c[11]),"=v"(c[15])
+    :"v"(tmpC));
 
-    __asm(
-    "ds_write_b128 %0, %2 offset:0\n"
-    "ds_write_b128 %1, %3 offset:4096\n"
-    "s_waitcnt lgkmcnt(0)\n"
-    ::"v"(ldsWriteA), "v"(ldsWriteB), "v"(ra), "v"(rb)
-    );
+    c[0].x += rA[0].x * rB[0].x;
+    c[0].y += rA[0].y * rB[0].x;
+    c[0].z += rA[0].z * rB[0].x;
+    c[0].w += rA[0].w * rB[0].x;
 
-    __asm(
-    "ds_read_b128 %0, %8 offset:0\n"
-    "ds_read_b128 %1, %8 offset:256\n"
-    "ds_read_b128 %4, %9 offset:0\n"
-    "ds_read_b128 %5, %9 offset:256\n"
-    "ds_read_b128 %2, %8 offset:512\n"
-    "ds_read_b128 %3, %8 offset:512+256\n"
-    "ds_read_b128 %6, %9 offset:512\n"
-    "ds_read_b128 %7, %9 offset:512+256\n"
-    "s_waitcnt lgkmcnt(0)\n"
-    :"=v"(rA[0]),"=v"(rA[1]),"=v"(rA[2]),"=v"(rA[3]),
-    "=v"(rB[0]),"=v"(rB[1]),"=v"(rB[2]),"=v"(rB[3])
-    :"v"(ldsReadA),"v"(ldsReadB)
-    );
+    c[1].x += rA[1].x * rB[0].y;
+    c[1].y += rA[1].y * rB[0].y;
+    c[1].z += rA[1].z * rB[0].y;
+    c[1].w += rA[1].w * rB[0].y;
 
-    __asm(
-    "v_add_f32 %0, %4, 1.0\n"
-    "v_add_f32 %1, %4, 1.0\n"
-    "v_add_f32 %2, %4, 1.0\n"
-    "v_add_f32 %3, %4, 1.0\n":
-    "=v"(c[0].x),"=v"(c[0].y),"=v"(c[0].z),"=v"(c[0].w):
-    "v"(rA[0].x)
-    );
+    c[2].x += rA[2].x * rB[0].z;
+    c[2].y += rA[2].y * rB[0].z;
+    c[2].z += rA[2].z * rB[0].z;
+    c[2].w += rA[2].w * rB[0].z;
 
-    __asm(
-    "v_add_f32 %0, %4, 1.0\n"
-    "v_add_f32 %1, %4, 1.0\n"
-    "v_add_f32 %2, %4, 1.0\n"
-    "v_add_f32 %3, %4, 1.0\n":
-    "=v"(c[1].x),"=v"(c[1].y),"=v"(c[1].z),"=v"(c[1].w):
-    "v"(rA[1].x)
-    );
+    c[3].x += rA[3].x * rB[0].w;
+    c[3].y += rA[3].y * rB[0].w;
+    c[3].z += rA[3].z * rB[0].w;
+    c[3].w += rA[3].w * rB[0].w;
 
-    __asm(
-    "v_add_f32 %0, %4, 1.0\n"
-    "v_add_f32 %1, %4, 1.0\n"
-    "v_add_f32 %2, %4, 1.0\n"
-    "v_add_f32 %3, %4, 1.0\n":
-    "=v"(c[2].x),"=v"(c[2].y),"=v"(c[2].z),"=v"(c[2].w):
-    "v"(rA[2].x)
-    );
 
-    __asm(
-    "v_add_f32 %0, %4, 1.0\n"
-    "v_add_f32 %1, %4, 1.0\n"
-    "v_add_f32 %2, %4, 1.0\n"
-    "v_add_f32 %3, %4, 1.0\n":
-    "=v"(c[3].x),"=v"(c[3].y),"=v"(c[3].z),"=v"(c[3].w):
-    "v"(rA[3].x)
-    );
+    c[4].x += rA[0].x * rB[1].x;
+    c[4].y += rA[0].y * rB[1].x;
+    c[4].z += rA[0].z * rB[1].x;
+    c[4].w += rA[0].w * rB[1].x;
 
-    __asm(
-    "v_add_f32 %0, %4, 1.0\n"
-    "v_add_f32 %1, %4, 1.0\n"
-    "v_add_f32 %2, %4, 1.0\n"
-    "v_add_f32 %3, %4, 1.0\n":
-    "=v"(c[4].x),"=v"(c[4].y),"=v"(c[4].z),"=v"(c[4].w):
-    "v"(rB[0].x)
-    );
+    c[5].x += rA[1].x * rB[1].y;
+    c[5].y += rA[1].y * rB[1].y;
+    c[5].z += rA[1].z * rB[1].y;
+    c[5].w += rA[1].w * rB[1].y;
 
-    __asm(
-    "v_add_f32 %0, %4, 1.0\n"
-    "v_add_f32 %1, %4, 1.0\n"
-    "v_add_f32 %2, %4, 1.0\n"
-    "v_add_f32 %3, %4, 1.0\n":
-    "=v"(c[5].x),"=v"(c[5].y),"=v"(c[5].z),"=v"(c[5].w):
-    "v"(rB[1].x)
-    );
+    c[6].x += rA[2].x * rB[1].z;
+    c[6].y += rA[2].y * rB[1].z;
+    c[6].z += rA[2].z * rB[1].z;
+    c[6].w += rA[2].w * rB[1].z;
 
-    __asm(
-    "v_add_f32 %0, %4, 1.0\n"
-    "v_add_f32 %1, %4, 1.0\n"
-    "v_add_f32 %2, %4, 1.0\n"
-    "v_add_f32 %3, %4, 1.0\n":
-    "=v"(c[6].x),"=v"(c[6].y),"=v"(c[6].z),"=v"(c[6].w):
-    "v"(rB[2].x)
-    );
+    c[7].x += rA[3].x * rB[1].w;
+    c[7].y += rA[3].y * rB[1].w;
+    c[7].z += rA[3].z * rB[1].w;
+    c[7].w += rA[3].w * rB[1].w;
 
-    __asm(
-    "v_add_f32 %0, %4, 1.0\n"
-    "v_add_f32 %1, %4, 1.0\n"
-    "v_add_f32 %2, %4, 1.0\n"
-    "v_add_f32 %3, %4, 1.0\n":
-    "=v"(c[7].x),"=v"(c[7].y),"=v"(c[7].z),"=v"(c[7].w):
-    "v"(rB[3].x)
-    );
+
+    c[8].x += rA[0].x * rB[2].x;
+    c[8].y += rA[0].y * rB[2].x;
+    c[8].z += rA[0].z * rB[2].x;
+    c[8].w += rA[0].w * rB[2].x;
+
+    c[9].x += rA[1].x * rB[2].y;
+    c[9].y += rA[1].y * rB[2].y;
+    c[9].z += rA[1].z * rB[2].y;
+    c[9].w += rA[1].w * rB[2].y;
+
+    c[10].x += rA[2].x * rB[2].z;
+    c[10].y += rA[2].y * rB[2].z;
+    c[10].z += rA[2].z * rB[2].z;
+    c[10].w += rA[2].w * rB[2].z;
+
+    c[11].x += rA[3].x * rB[2].w;
+    c[11].y += rA[3].y * rB[2].w;
+    c[11].z += rA[3].z * rB[2].w;
+    c[11].w += rA[3].w * rB[2].w;
+
+
+    c[12].x += rA[0].x * rB[3].x;
+    c[12].y += rA[0].y * rB[3].x;
+    c[12].z += rA[0].z * rB[3].x;
+    c[12].w += rA[0].w * rB[3].x;
+
+    c[13].x += rA[1].x * rB[3].y;
+    c[13].y += rA[1].y * rB[3].y;
+    c[13].z += rA[1].z * rB[3].y;
+    c[13].w += rA[1].w * rB[3].y;
+
+    c[14].x += rA[2].x * rB[3].z;
+    c[14].y += rA[2].y * rB[3].z;
+    c[14].z += rA[2].z * rB[3].z;
+    c[14].w += rA[2].w * rB[3].z;
+
+    c[15].x += rA[3].x * rB[3].w;
+    c[15].y += rA[3].y * rB[3].w;
+    c[15].z += rA[3].z * rB[3].w;
+    c[15].w += rA[3].w * rB[3].w;
+
 
 
 
