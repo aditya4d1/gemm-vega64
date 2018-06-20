@@ -154,7 +154,7 @@ inline __device__ void outerProduct8x8(Half2x4 &a, Half2x4 &b, Half2x4 &c0, Half
 
 
 
-inline __device__ void outerProduct4x4(Half4 &a, Half4 &b, Float4 &c0, Float4 &c1, Float4 &c2, Float4 &c3) {
+inline __device__ void outerProduct4x4(Half2x4 &a, Half2x4 &b, Float4 &c0, Float4 &c1, Float4 &c2, Float4 &c3) {
     /**
      * For MSB
      */

@@ -26,16 +26,16 @@ constexpr uint32_t x32 = 32;
 constexpr uint32_t x16 = 16;
 constexpr size_t Size = xDim * yDim * sizeof(float);
 
-__global__ void SGEMM(Half4 *A, Half4 *B, Float4 *C, int *getGlobalAId, int *getGlobalCId) {
+__global__ void SGEMM(Half2x4 *A, Half2x4 *B, Float4 *C, int *getGlobalAId, int *getGlobalCId) {
     int tx = hipThreadIdx_x;
     int ty = hipThreadIdx_y;
     int bx = hipBlockIdx_x;
     int by = hipBlockIdx_y;
 
-    Half4 rA[4], rB[4];
+    Half2x4 rA[4], rB[4];
     Float4 c[16];
 
-    Half4 ra, rb;
+    Half2x4 ra, rb;
 
     uint32_t redA = 0;
     uint32_t redB = 4096;
@@ -90,11 +90,11 @@ __global__ void SGEMM(Half4 *A, Half4 *B, Float4 *C, int *getGlobalAId, int *get
     global_load<16>(tmpC, c[15]);
 
     vmcnt<0>();
-    shared_write_b64_off<0>(ra, ldsWriteA);
-    shared_write_b64_off<4096>(rb, ldsWriteA);
+    shared_write_b128_off<0>(ra, ldsWriteA);
+    shared_write_b128_off<4096>(rb, ldsWriteA);
     lgkmcnt<0>();
 
-    shared_read_b64<0>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
+    shared_read_b128<0>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
 
     for(int j=1;j<yDim/8;j++) {
 
@@ -103,7 +103,7 @@ __global__ void SGEMM(Half4 *A, Half4 *B, Float4 *C, int *getGlobalAId, int *get
         a_global_id += 8 * 1024;
         b_global_id += 8 * 1024;
 
-        shared_read_b64<512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
+        shared_read_b128<512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
         lgkmcnt<4>();
 
         // i = 0
@@ -112,7 +112,7 @@ __global__ void SGEMM(Half4 *A, Half4 *B, Float4 *C, int *getGlobalAId, int *get
         outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
         outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
 
-        shared_read_b64<2*512>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
+        shared_read_b128<2*512>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
         lgkmcnt<4>();
 
         // i = 1
@@ -121,7 +121,7 @@ __global__ void SGEMM(Half4 *A, Half4 *B, Float4 *C, int *getGlobalAId, int *get
         outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
         outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
 
-        shared_read_b64<3*512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
+        shared_read_b128<3*512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
         lgkmcnt<4>();
 
     // i = 2
@@ -130,7 +130,7 @@ __global__ void SGEMM(Half4 *A, Half4 *B, Float4 *C, int *getGlobalAId, int *get
         outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
         outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
 
-        shared_read_b64<4*512>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
+        shared_read_b128<4*512>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
         lgkmcnt<4>();
 
     // i = 3
@@ -139,7 +139,7 @@ __global__ void SGEMM(Half4 *A, Half4 *B, Float4 *C, int *getGlobalAId, int *get
         outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
         outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
 
-        shared_read_b64<5*512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
+        shared_read_b128<5*512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
         lgkmcnt<4>();
 
     // i = 4
@@ -148,7 +148,7 @@ __global__ void SGEMM(Half4 *A, Half4 *B, Float4 *C, int *getGlobalAId, int *get
         outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
         outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
 
-        shared_read_b64<6*512>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
+        shared_read_b128<6*512>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
         lgkmcnt<4>();
 
     // i = 5
@@ -157,7 +157,7 @@ __global__ void SGEMM(Half4 *A, Half4 *B, Float4 *C, int *getGlobalAId, int *get
         outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
         outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
 
-        shared_read_b64<7*512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
+        shared_read_b128<7*512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
         redA = redA ^ 0x2000;
         redB = redB ^ 0x2000;
 
@@ -168,8 +168,8 @@ __global__ void SGEMM(Half4 *A, Half4 *B, Float4 *C, int *getGlobalAId, int *get
 
         vmcnt<0>();
 
-        shared_write_b64_off<0>(ra, ldsWriteA);
-        shared_write_b64_off<4096>(rb, ldsWriteA);
+        shared_write_b128_off<0>(ra, ldsWriteA);
+        shared_write_b128_off<4096>(rb, ldsWriteA);
 
         lgkmcnt<2>();
 
@@ -182,7 +182,7 @@ __global__ void SGEMM(Half4 *A, Half4 *B, Float4 *C, int *getGlobalAId, int *get
         lgkmcnt<0>();
         __syncthreads();
 
-        shared_read_b64<0>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
+        shared_read_b128<0>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
     // i = 7
         outerProduct4x4(rA[2], rB[2], c[0], c[1], c[2], c[3]);
         outerProduct4x4(rA[2], rB[3], c[4], c[5], c[6], c[7]);
@@ -191,7 +191,7 @@ __global__ void SGEMM(Half4 *A, Half4 *B, Float4 *C, int *getGlobalAId, int *get
     }
 
 
-    shared_read_b64<512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
+    shared_read_b128<512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
     lgkmcnt<4>();
 
     // i = 0
@@ -200,7 +200,7 @@ __global__ void SGEMM(Half4 *A, Half4 *B, Float4 *C, int *getGlobalAId, int *get
     outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
     outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
 
-    shared_read_b64<2*512>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
+    shared_read_b128<2*512>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
     lgkmcnt<4>();
 
     // i = 1
@@ -209,7 +209,7 @@ __global__ void SGEMM(Half4 *A, Half4 *B, Float4 *C, int *getGlobalAId, int *get
     outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
     outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
 
-    shared_read_b64<3*512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
+    shared_read_b128<3*512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
     lgkmcnt<4>();
 
     // i = 2
@@ -218,7 +218,7 @@ __global__ void SGEMM(Half4 *A, Half4 *B, Float4 *C, int *getGlobalAId, int *get
     outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
     outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
 
-    shared_read_b64<4*512>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
+    shared_read_b128<4*512>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
     lgkmcnt<4>();
 
     // i = 3
@@ -227,7 +227,7 @@ __global__ void SGEMM(Half4 *A, Half4 *B, Float4 *C, int *getGlobalAId, int *get
     outerProduct4x4(rA[3], rB[2], c[8], c[9], c[10], c[11]);
     outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
 
-    shared_read_b64<5*512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
+    shared_read_b128<5*512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
     lgkmcnt<4>();
 
     // i = 4
@@ -236,7 +236,7 @@ __global__ void SGEMM(Half4 *A, Half4 *B, Float4 *C, int *getGlobalAId, int *get
     outerProduct4x4(rA[1], rB[0], c[8], c[9], c[10], c[11]);
     outerProduct4x4(rA[1], rB[1], c[12], c[13], c[14], c[15]);
 
-    shared_read_b64<6*512>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
+    shared_read_b128<6*512>(rA[0], rA[1], rB[0], rB[1], ldsReadA, ldsReadB);
     lgkmcnt<4>();
 
     // i = 5
@@ -246,7 +246,7 @@ __global__ void SGEMM(Half4 *A, Half4 *B, Float4 *C, int *getGlobalAId, int *get
     outerProduct4x4(rA[3], rB[3], c[12], c[13], c[14], c[15]);
 
 
-    shared_read_b64<7*512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
+    shared_read_b128<7*512>(rA[2], rA[3], rB[2], rB[3], ldsReadA, ldsReadB);
 
     lgkmcnt<4>();
     // i = 6
@@ -295,7 +295,7 @@ __global__ void SGEMM(Half4 *A, Half4 *B, Float4 *C, int *getGlobalAId, int *get
 
 int main() {
     hipSetDevice(0);
-    std::vector<Half4> a(xDim4*yDim), b(xDim4*yDim);
+    std::vector<Half2x4> a(xDim4*yDim), b(xDim4*yDim);
     std::vector<Float4> c(xDim*xDim4);
     std::fill(c.begin(), c.end(), 0.0f);
     __fp16 *_a = reinterpret_cast<__fp16*>(a.data());
@@ -313,16 +313,16 @@ int main() {
         }
     }
 
-    Half4 *Ad, *Bd;
+    Half2x4 *Ad, *Bd;
     Float4 *Cd;
     int *buffA, *buffB;
     hipHostMalloc(&buffA, 16*16*sizeof(int));
     hipHostMalloc(&buffB, 16*16*sizeof(int));
-    hipMalloc(&Ad, a.size()*sizeof(Half4));
-    hipMalloc(&Bd, b.size()*sizeof(Half4));
+    hipMalloc(&Ad, a.size()*sizeof(Half2x4));
+    hipMalloc(&Bd, b.size()*sizeof(Half2x4));
     hipMalloc(&Cd, c.size()*sizeof(Float4));
-    hipMemcpy(Ad, a.data(), a.size()*sizeof(Half4), hipMemcpyHostToDevice);
-    hipMemcpy(Bd, b.data(), b.size()*sizeof(Half4), hipMemcpyHostToDevice);
+    hipMemcpy(Ad, a.data(), a.size()*sizeof(Half2x4), hipMemcpyHostToDevice);
+    hipMemcpy(Bd, b.data(), b.size()*sizeof(Half2x4), hipMemcpyHostToDevice);
     hipMemcpy(Cd, c.data(), c.size()*sizeof(Float4), hipMemcpyHostToDevice);
     auto start = std::chrono::high_resolution_clock::now();
     hipLaunchKernelGGL(SGEMM, dim3(32,32,1), dim3(16,16,1), 4*sizeof(float)*8*128, 0, Ad, Bd, Cd, buffA, buffB);
