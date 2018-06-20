@@ -23,6 +23,24 @@ inline __device__ void global_load(Float4* ptr, Float4 &val) {
 }
 
 template<uint32_t offset>
+inline __device__ void global_load(Half4* ptr, Half4& val) {
+    if(offset == 0*32) {
+      asm volatile("\n \
+      global_load_dwordx2 %0, %1, off \n \
+      "
+      :"=v"(val)
+      :"v"(ptr));
+    }
+    if(offset == 16) {
+      asm volatile("\n \
+      global_load_dwordx2 %0, %1, off offset:16*4*2 \n \
+      "
+      :"=v"(val)
+      :"v"(ptr));
+    }
+}
+
+template<uint32_t offset>
 inline __device__ void global_load(Half2x4* ptr, Half2x4 &val) {
     if(offset == 0*32) {
     asm volatile("\n \
@@ -76,26 +94,6 @@ inline __device__ void global_load(Half2x4* ptr, Half2x4 &val, uint32_t off) {
     "
     :"=v"(val)
     :"v"(ptr + off));
-    }
-}
-
-
-template<uint32_t offset>
-inline __device__ void global_load(Half4* ptr, Half4 &val) {
-    if(offset == 0*32) {
-    asm volatile("\n \
-    global_load_dwordx2 %0, %1, off \n \
-    "
-    :"=v"(val)
-    :"v"(ptr));
-    return;
-    }
-    if(offset == 16) {
-    asm volatile("\n \
-    global_load_dwordx2 %0, %1, off offset:16*4*4 \n \
-    "
-    :"=v"(val)
-    :"v"(ptr));
     }
 }
 
